@@ -1,0 +1,469 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum ServicePricingType {
+  FIXED        // Por trabajo
+  HOURLY       // Por hora
+  STARTING_AT  // Desde
+  CUSTOM_QUOTE // Cotización personalizada
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+  PAUSED
+}
+
+enum JobRequestStatus {
+  OPEN         // Recibiendo propuestas
+  IN_SELECTION // Evaluando candidatos
+  ASSIGNED     // Propuesta aceptada -> WorkOrder creada
+  CANCELLED    // Cancelada por el cliente
+}
+
+enum ProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum WorkOrderStatus {
+  IN_PROGRESS
+  COMPLETION_PENDING
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum NotificationType {
+  NEW_PROPOSAL
+  PROPOSAL_ACCEPTED
+  PROPOSAL_REJECTED
+  WORK_ORDER_COMPLETED
+  NEW_REVIEW
+  NEW_MESSAGE
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}
+
+enum CredentialType {
+  CERTIFICATION
+  DIPLOMA
+  DEGREE
+  LICENSE
+  COURSE
+}
+
+enum CredentialStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+model User {
+  id                   String         @id @default(uuid())
+  email                String         @unique
+  passwordHash         String
+  fullName             String
+  professionalHeadline String?        // Ej. "Técnico Electricista Residencial e Industrial"
+  phone                String?
+  whatsapp             String?        // Teléfono o enlace directo de WhatsApp
+  telegram             String?        // Usuario o enlace de Telegram (ej. @usuario)
+  instagram            String?        // Usuario o enlace de Instagram (ej. @usuario)
+  facebook             String?        // Enlace o perfil de Facebook
+  avatarUrl            String?
+  bio                  String?        @db.Text
+  location             String?
+  serviceArea          String?
+  baseLatitude         Float?         // Coordenada base aproximada de cobertura
+  baseLongitude        Float?         // Coordenada base aproximada de cobertura
+  serviceRadiusKm      Int?           @default(15) // Radio de cobertura en KM
+  experienceYears      Int?           @default(0)
+  role                 Role           @default(USER)
+  
+  workerRatingAvg      Decimal        @default(0.00) @db.Decimal(3, 2)
+  workerRatingCnt      Int            @default(0)
+  clientRatingAvg      Decimal        @default(0.00) @db.Decimal(3, 2)
+  clientRatingCnt      Int            @default(0)
+  
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  // Relaciones
+  credentials        Credential[]
+  experiences        Experience[]
+  services           Service[]
+  portfolioItems     PortfolioItem[]
+  jobRequests        JobRequest[]
+  proposals          Proposal[]
+  clientWorkOrders   WorkOrder[]    @relation("ClientOrders")
+  workerWorkOrders   WorkOrder[]    @relation("WorkerOrders")
+  authoredReviews    Review[]       @relation("AuthoredReviews")
+  receivedReviews    Review[]       @relation("ReceivedReviews")
+  favoriteServices   FavoriteService[]
+  favoriteWorkers    FavoriteWorker[]  @relation("UserFavoritedWorkers")
+  favoritedByUsers   FavoriteWorker[]  @relation("WorkerFavorites")
+  conversations      ConversationParticipant[]
+  messages           Message[]
+  notifications      Notification[]
+  reportsFiled       MessageReport[] @relation("ReportsFiled")
+  reportsReceived    MessageReport[] @relation("ReportsReceived")
+  blockedUsers       UserBlock[]     @relation("BlocksCreated")
+  blockedByUsers     UserBlock[]     @relation("BlocksReceived")
+
+  @@index([email])
+}
+
+model Credential {
+  id              String            @id @default(uuid())
+  userId          String
+  type            CredentialType    @default(CERTIFICATION)
+  title           String
+  issuer          String            // Institución emisora (ej. STPS, Conalep, SEP, etc.)
+  issueDate       DateTime?
+  expiryDate      DateTime?
+  credentialId    String?           // Folio / Cédula / Número de registro
+  evidenceUrl     String?           // URL de documento o imagen comprobatoria
+  status          CredentialStatus  @default(PENDING)
+  rejectionReason String?
+  verifiedAt      DateTime?
+  verifiedById    String?           // ID del moderador o admin que auditó la credencial
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Experience {
+  id          String    @id @default(uuid())
+  userId      String
+  roleTitle   String    // Puesto o actividad (ej. "Técnico en Climatización", "Albañil Especialista")
+  companyName String?   // Empresa o proyecto
+  isFreelance Boolean   @default(false) // "Trabajé de forma independiente"
+  startYear   Int       // Año inicio (ej. 2018)
+  endYear     Int?      // Año fin (ej. 2023) o null si es actual
+  isCurrent   Boolean   @default(false) // "Actualmente"
+  description String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Category {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  slug        String       @unique
+  description String?      @db.Text
+  iconName    String?
+  imageUrl    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  services    Service[]
+  jobRequests JobRequest[]
+
+  @@index([slug])
+}
+
+model Service {
+  id              String             @id @default(uuid())
+  title           String
+  description     String             @db.Text
+  pricingType     ServicePricingType @default(FIXED)
+  price           Decimal?           @db.Decimal(10, 2)
+  location        String             // Zona pública de cobertura
+  serviceArea     String?
+  latitude        Float?             // Latitud aproximada del centroide de servicio
+  longitude       Float?             // Longitud aproximada del centroide de servicio
+  serviceRadiusKm Int?               @default(15)
+  status          ServiceStatus      @default(ACTIVE)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  userId       String
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId   String
+  category     Category           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  images       ServiceImage[]
+  portfolioItems PortfolioItem[]
+  favorites    FavoriteService[]
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model ServiceImage {
+  id        String   @id @default(uuid())
+  imageUrl  String
+  order     Int      @default(0)
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([serviceId])
+}
+
+model PortfolioItem {
+  id          String   @id @default(uuid())
+  title       String
+  description String?  @db.Text
+  imageUrl    String
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId   String?
+  service     Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([serviceId])
+}
+
+model JobRequest {
+  id             String           @id @default(uuid())
+  title          String
+  description    String           @db.Text
+  location       String           // Zona pública (ej. "San Pedro Garza García • Del Valle")
+  exactAddress   String?          @db.Text // Dirección privada del cliente (solo revelada en WorkOrder activa)
+  latitude       Float?           // Latitud aproximada para cálculo de distancia
+  longitude      Float?           // Longitud aproximada para cálculo de distancia
+  budgetMin      Decimal?         @db.Decimal(10, 2)
+  budgetMax      Decimal?         @db.Decimal(10, 2)
+  requiredDate   DateTime?
+  status         JobRequestStatus @default(OPEN)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  images         JobRequestImage[]
+  proposals      Proposal[]
+  workOrder      WorkOrder?
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model JobRequestImage {
+  id           String     @id @default(uuid())
+  imageUrl     String
+  jobRequestId String
+  jobRequest   JobRequest @relation(fields: [jobRequestId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@index([jobRequestId])
+}
+
+model Proposal {
+  id             String         @id @default(uuid())
+  price          Decimal        @db.Decimal(10, 2)
+  message        String         @db.Text
+  estimatedDays  Int?
+  status         ProposalStatus @default(PENDING)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  jobRequestId   String
+  jobRequest     JobRequest     @relation(fields: [jobRequestId], references: [id], onDelete: Cascade)
+  workerId       String
+  worker         User           @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  workOrder      WorkOrder?
+
+  @@unique([jobRequestId, workerId])
+  @@index([jobRequestId])
+  @@index([workerId])
+  @@index([status])
+}
+
+model WorkOrder {
+  id                    String          @id @default(uuid())
+  agreedPrice           Decimal         @db.Decimal(10, 2)
+  status                WorkOrderStatus @default(IN_PROGRESS)
+  startDate             DateTime        @default(now())
+  completedDate         DateTime?
+  completionRequestedAt DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  jobRequestId          String          @unique
+  jobRequest            JobRequest      @relation(fields: [jobRequestId], references: [id], onDelete: Restrict)
+  proposalId            String          @unique
+  proposal              Proposal        @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+
+  clientId              String
+  client                User            @relation("ClientOrders", fields: [clientId], references: [id], onDelete: Restrict)
+  workerId              String
+  worker                User            @relation("WorkerOrders", fields: [workerId], references: [id], onDelete: Restrict)
+
+  reviews               Review[]
+
+  @@index([clientId])
+  @@index([workerId])
+  @@index([status])
+}
+
+model Review {
+  id           String     @id @default(uuid())
+  rating       Int        // 1 a 5
+  comment      String?    @db.Text
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  workOrderId  String
+  workOrder    WorkOrder  @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  authorId     String
+  author       User       @relation("AuthoredReviews", fields: [authorId], references: [id], onDelete: Cascade)
+  targetUserId String
+  targetUser   User       @relation("ReceivedReviews", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@unique([workOrderId, authorId])
+  @@index([workOrderId])
+  @@index([authorId])
+  @@index([targetUserId])
+}
+
+model FavoriteService {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, serviceId])
+  @@index([userId])
+  @@index([serviceId])
+}
+
+model FavoriteWorker {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation("UserFavoritedWorkers", fields: [userId], references: [id], onDelete: Cascade)
+  workerId  String
+  worker    User     @relation("WorkerFavorites", fields: [workerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, workerId])
+  @@index([userId])
+  @@index([workerId])
+}
+
+model Conversation {
+  id           String                    @id @default(uuid())
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt       DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  content        String       @db.Text
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  reports        MessageReport[]
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+model UserBlock {
+  id        String   @id @default(uuid())
+  blockerId String
+  blocker   User     @relation("BlocksCreated", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}
+
+model MessageReport {
+  id             String       @id @default(uuid())
+  reason         String
+  details        String?      @db.Text
+  status         ReportStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+  reporterId     String
+  reporter       User         @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUserId String
+  reportedUser   User         @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  messageId      String?
+  message        Message?     @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([messageId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
