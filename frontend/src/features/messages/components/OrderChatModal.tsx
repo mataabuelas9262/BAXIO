@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { ReportModal, ReportTarget } from './ReportModal';
 
 interface OrderChatModalProps {
   isOpen: boolean;
@@ -24,10 +25,17 @@ export function OrderChatModal({ isOpen, onClose, order, currentUserId }: OrderC
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
-  const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'report-message' | 'report-user' | 'block'; id?: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'block'; id?: string } | null>(null);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
+  const [reportNotice, setReportNotice] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const counterpart = order && currentUserId === order.clientId ? order.worker : order?.client;
+
+  useEffect(() => {
+    setReportTarget(null);
+    setReportNotice('');
+  }, [order?.id, isOpen]);
 
   const loadConversation = useCallback(async () => {
     if (!order) return;
@@ -88,10 +96,6 @@ export function OrderChatModal({ isOpen, onClose, order, currentUserId }: OrderC
       if (confirmAction.type === 'delete' && confirmAction.id) {
         await messagesApi.delete(confirmAction.id);
         setConversation((current) => current ? { ...current, messages: current.messages.filter((message) => message.id !== confirmAction.id) } : current);
-      } else if (confirmAction.type === 'report-message' && confirmAction.id) {
-        await messagesApi.report({ messageId: confirmAction.id, reason: 'Reporte desde conversación' });
-      } else if (confirmAction.type === 'report-user' && counterpart?.id) {
-        await messagesApi.report({ reportedUserId: counterpart.id, reason: 'Reporte de usuario desde conversación' });
       } else if (confirmAction.type === 'block' && counterpart?.id) {
         await messagesApi.block(counterpart.id);
         onClose();
@@ -105,8 +109,9 @@ export function OrderChatModal({ isOpen, onClose, order, currentUserId }: OrderC
   };
 
   return (
+    <>
     <Modal
-      isOpen={isOpen}
+      isOpen={isOpen && !reportTarget}
       onClose={onClose}
       maxWidth="md"
       title={`Chat con ${counterpart?.fullName || 'tu contacto'}`}
@@ -119,11 +124,12 @@ export function OrderChatModal({ isOpen, onClose, order, currentUserId }: OrderC
             Este chat es privado entre las dos personas de esta orden de trabajo.
           </p>
           <div className="ml-auto flex shrink-0 gap-1">
-            <button type="button" onClick={() => setConfirmAction({ type: 'report-user' })} className="rounded-lg p-1.5 text-amber-700 hover:bg-amber-100" aria-label="Reportar usuario"><Flag className="h-4 w-4" /></button>
+            <button type="button" disabled={!counterpart?.id} onClick={() => { if (counterpart) { setReportNotice(''); setReportTarget({ type: 'user', id: counterpart.id, name: counterpart.fullName }); } }} className="rounded-lg p-1.5 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-950/40" aria-label="Reportar usuario"><Flag className="h-4 w-4" /></button>
             <button type="button" onClick={() => setConfirmAction({ type: 'block' })} className="rounded-lg p-1.5 text-rose-700 hover:bg-rose-100" aria-label="Bloquear usuario"><Ban className="h-4 w-4" /></button>
           </div>
         </div>
 
+        {reportNotice && <p role="status" className="rounded-xl border border-emerald-300/40 bg-emerald-50 p-3 text-xs font-medium text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">{reportNotice}</p>}
         {error && (
           <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700">
             {error}
@@ -148,7 +154,7 @@ export function OrderChatModal({ isOpen, onClose, order, currentUserId }: OrderC
                     </p>
                     <div className={`mt-1 flex gap-1 ${isMine ? 'text-brand-100' : 'text-slate-400'}`}>
                       <button type="button" onClick={() => copyMessage(message.content)} aria-label="Copiar mensaje"><Copy className="h-3.5 w-3.5" /></button>
-                      {isMine ? <><button type="button" onClick={() => { setEditingId(message.id); setEditingContent(message.content); }} aria-label="Editar mensaje"><Pencil className="h-3.5 w-3.5" /></button><button type="button" onClick={() => setConfirmAction({ type: 'delete', id: message.id })} aria-label="Eliminar mensaje"><Trash2 className="h-3.5 w-3.5" /></button></> : <button type="button" onClick={() => setConfirmAction({ type: 'report-message', id: message.id })} aria-label="Reportar mensaje"><Flag className="h-3.5 w-3.5" /></button>}
+                      {isMine ? <><button type="button" onClick={() => { setEditingId(message.id); setEditingContent(message.content); }} aria-label="Editar mensaje"><Pencil className="h-3.5 w-3.5" /></button><button type="button" onClick={() => setConfirmAction({ type: 'delete', id: message.id })} aria-label="Eliminar mensaje"><Trash2 className="h-3.5 w-3.5" /></button></> : <button type="button" onClick={() => { setReportNotice(''); setReportTarget({ type: 'message', id: message.id, name: message.sender.fullName, preview: message.content }); }} aria-label="Reportar mensaje"><Flag className="h-3.5 w-3.5" /></button>}
                     </div>
                   </div>
                 </div>
@@ -196,5 +202,7 @@ export function OrderChatModal({ isOpen, onClose, order, currentUserId }: OrderC
         variant={confirmAction?.type === 'delete' || confirmAction?.type === 'block' ? 'danger' : 'warning'}
       />
     </Modal>
+    {isOpen && reportTarget && <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSent={() => { setReportTarget(null); setReportNotice('Reporte enviado. Quedó registrado para revisión.'); }} />}
+    </>
   );
 }

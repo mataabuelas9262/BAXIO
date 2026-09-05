@@ -168,7 +168,7 @@ test.describe('flujos E2E con base aislada', () => {
 
     const reportedMessage = await request.post(`${apiBaseUrl}/messages/reports`, {
       headers: auth(worker),
-      data: { messageId: message.id, reason: 'Prueba automatizada' },
+      data: { messageId: message.id, reason: 'Otro', details: 'Prueba automatizada' },
     });
     expect(reportedMessage.status()).toBe(201);
 

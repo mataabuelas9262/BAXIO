@@ -66,6 +66,8 @@ export class MessagesService {
   }
 
   async createReport(userId: string, dto: { messageId?: string; reportedUserId?: string; reason: string; details?: string }) {
+    if (Boolean(dto.messageId) === Boolean(dto.reportedUserId)) throw new BadRequestException('Selecciona un mensaje o un usuario para reportar');
+    if (dto.reason === 'Otro' && !dto.details?.trim()) throw new BadRequestException('Explica brevemente el motivo del reporte');
     let reportedUserId = dto.reportedUserId;
     if (dto.messageId) {
       const message = await this.messagesRepository.findMessageById(dto.messageId);

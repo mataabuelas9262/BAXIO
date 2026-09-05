@@ -183,7 +183,7 @@ export const messagesApi = {
   },
   update: async (messageId: string, content: string): Promise<ChatMessage> => apiClient.patch(`/messages/${messageId}`, { content }),
   delete: async (messageId: string): Promise<{ message: string }> => apiClient.delete(`/messages/${messageId}`),
-  report: async (data: { messageId?: string; reportedUserId?: string; reason: string }) => apiClient.post('/messages/reports', data),
+  report: async (data: { messageId?: string; reportedUserId?: string; reason: string; details?: string }) => apiClient.post('/messages/reports', data),
   block: async (userId: string): Promise<{ message: string }> => apiClient.post(`/messages/blocks/${userId}`),
   unblock: async (userId: string): Promise<{ message: string }> => apiClient.delete(`/messages/blocks/${userId}`),
 };
