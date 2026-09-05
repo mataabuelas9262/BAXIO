@@ -36,8 +36,8 @@ Thumbs.db
 .env.*
 !.env.example
 *.sql
-uploads/
-uploads-e2e/
+/backend/uploads/
+/backend/uploads-e2e/
 .next-e2e/
 playwright-report/
 test-results/
