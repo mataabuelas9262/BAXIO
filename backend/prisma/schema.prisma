@@ -219,6 +219,7 @@ model Service {
 }
 
 model ServiceImage {
+  isIllustrative Boolean @default(false)
   id        String   @id @default(uuid())
   imageUrl  String
   order     Int      @default(0)
@@ -277,6 +278,7 @@ model JobRequest {
 }
 
 model JobRequestImage {
+  isIllustrative Boolean @default(false)
   id           String     @id @default(uuid())
   imageUrl     String
   jobRequestId String

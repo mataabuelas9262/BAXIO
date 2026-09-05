@@ -5,6 +5,7 @@ import { ModeProvider } from '@/features/mode/context/ModeContext';
 import { Navbar } from '@/components/layout/Navbar';
 import { MobileNavigation } from '@/components/layout/MobileNavigation';
 import { Footer } from '@/components/layout/Footer';
+import { NoticeProvider } from '@/components/ui/NoticeProvider';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
@@ -25,14 +26,14 @@ export default function RootLayout({
   return (
     <html lang="es" className="h-full bg-slate-50">
       <body className="flex min-h-full flex-col font-sans antialiased text-slate-900 bg-slate-50">
-        <AuthProvider>
+        <NoticeProvider><AuthProvider>
           <ModeProvider>
             <Navbar />
             <main className="flex-1 pb-16 md:pb-0">{children}</main>
             <MobileNavigation />
             <Footer />
           </ModeProvider>
-        </AuthProvider>
+        </AuthProvider></NoticeProvider>
       </body>
     </html>
   );

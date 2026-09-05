@@ -1,5 +1,7 @@
 # 🚀 BAXIO - Plataforma Web de Conexión de Servicios y Chamba
 
+Consulta [Mantenimiento y mejoras de septiembre de 2026](MAINTENANCE.md) para la subida propia de fotos, migración, pruebas y configuración de producción.
+
 BAXIO es una plataforma web moderna, modular y responsiva mobile-first diseñada para conectar de forma confiable a personas que ofrecen servicios con personas que necesitan contratarlos.
 
 ---

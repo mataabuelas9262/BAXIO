@@ -96,7 +96,7 @@ export default function LoginPage() {
             </div>
           </form>
 
-          {/* Quick Demo Credentials */}
+          {process.env.NODE_ENV !== 'production' && <>
           <div className="mt-6 pt-6 border-t border-slate-100 text-center">
             <p className="text-[11px] text-slate-400 font-medium mb-2">
               Credenciales de prueba del seed:
@@ -106,6 +106,7 @@ export default function LoginPage() {
               <div>juan.electricista@baxio.com / password123 (Trabajador)</div>
             </div>
           </div>
+          </>}
         </Card>
 
         <p className="text-center text-xs text-slate-500">

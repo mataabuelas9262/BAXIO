@@ -1,9 +1,11 @@
+import 'dotenv/config';
 import { PrismaClient, Role, ServicePricingType, ServiceStatus, JobRequestStatus, ProposalStatus, WorkOrderStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') throw new Error('El seed de cuentas demo no se puede ejecutar en producción.');
   console.log('🌱 Iniciando Seed para BAXIO...');
 
   // Limpiar base de datos si ya tiene datos

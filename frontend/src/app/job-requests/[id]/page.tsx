@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useNotice } from '@/components/ui/NoticeProvider';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -53,6 +54,7 @@ function JobRequestImage({ src }: { src: string }) {
 }
 
 export default function JobRequestDetailPage() {
+  const showNotice = useNotice();
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
@@ -91,7 +93,7 @@ export default function JobRequestDetailPage() {
       );
       await loadJobRequest();
     } catch (err: any) {
-      alert(err.message || 'Error al aceptar la propuesta');
+      showNotice(err.message || 'Error al aceptar la propuesta');
     } finally {
       setIsAcceptingId(null);
       setProposalToAccept(null);
@@ -238,7 +240,7 @@ export default function JobRequestDetailPage() {
                 <h4 className="text-xs font-bold text-slate-700 mb-3">Imágenes adjuntas</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {jobRequest.images.map((img) => (
-                    <JobRequestImage key={img.id} src={img.imageUrl} />
+                    <div key={img.id} className="relative"><JobRequestImage src={img.imageUrl} />{img.isIllustrative && <span className="absolute bottom-2 left-2 rounded bg-slate-900/90 px-2 py-1 text-xs text-white">Imagen ilustrativa</span>}</div>
                   ))}
                 </div>
               </div>

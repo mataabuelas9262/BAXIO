@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useNotice } from '@/components/ui/NoticeProvider';
 import Link from 'next/link';
 import { Search, PlusCircle, Briefcase, MapPin, SlidersHorizontal } from 'lucide-react';
 import { jobRequestsApi, categoriesApi } from '@/services/api/endpoints';
@@ -13,6 +14,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ROUTES } from '@/constants/routes';
 
 export default function JobRequestsBoardPage() {
+  const showNotice = useNotice();
   const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -42,7 +44,7 @@ export default function JobRequestsBoardPage() {
     }
 
     if (!navigator.geolocation) {
-      alert('Tu navegador no soporta geolocalización.');
+      showNotice('Tu navegador no soporta geolocalización.');
       return;
     }
 

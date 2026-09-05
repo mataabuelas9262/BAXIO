@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { ImageUploader, PublicationImage } from '@/components/ui/ImageUploader';
 import { ROUTES } from '@/constants/routes';
 
 export default function NewServicePage() {
@@ -26,7 +27,8 @@ export default function NewServicePage() {
   const [price, setPrice] = useState('');
   const [location, setLocation] = useState('');
   const [serviceArea, setServiceArea] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [images, setImages] = useState<PublicationImage[]>([]);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [editServiceId, setEditServiceId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,12 +52,13 @@ export default function NewServicePage() {
       setPrice(service.price ? String(service.price) : '');
       setLocation(service.location);
       setServiceArea(service.serviceArea || '');
-      setImageUrl(service.images?.[0]?.imageUrl || '');
+      setImages(service.images || []);
     }).catch(() => setError('No fue posible cargar el servicio para editarlo.'));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isUploadingImages) return;
     if (!isAuthenticated) {
       router.push(ROUTES.LOGIN);
       return;
@@ -78,7 +81,7 @@ export default function NewServicePage() {
         price: price ? Number(price) : undefined,
         location: location.trim(),
         serviceArea: serviceArea.trim() || undefined,
-        imageUrls: imageUrl.trim() ? [imageUrl.trim()] : undefined,
+        images: images.map(({ imageUrl, isIllustrative }) => ({ imageUrl, isIllustrative })),
       };
       const newService = editServiceId
         ? await servicesApi.update(editServiceId, payload)
@@ -181,13 +184,7 @@ export default function NewServicePage() {
             />
           </div>
 
-          <Input
-            label="Fotografía del Servicio (URL de imagen)"
-            placeholder="https://ejemplo.com/foto-trabajo.jpg"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            helperText="Puedes pegar un enlace de imagen para ilustrar tu trabajo."
-          />
+          <ImageUploader images={images} onChange={setImages} onBusyChange={setIsUploadingImages} disabled={isLoading || !isAuthenticated} />
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
             <Button
@@ -203,6 +200,7 @@ export default function NewServicePage() {
               variant="primary"
               size="lg"
               isLoading={isLoading}
+              disabled={isUploadingImages}
               className="font-bold"
             >
               {editServiceId ? 'Guardar Cambios' : 'Publicar Servicio en BAXIO'}

@@ -22,7 +22,7 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: [['list'], ['html', { open: 'never' }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
@@ -36,7 +36,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) },
     },
 
     // {
@@ -73,16 +73,17 @@ export default defineConfig({
   /* La suite usa servidores y una base de datos exclusivos de E2E. */
   webServer: [
     {
-      command: 'npm run e2e:server',
+      command: 'node -r ts-node/register scripts/e2e-server.ts',
       cwd: '../backend',
       url: 'http://localhost:4001/api/categories',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       timeout: 120_000,
     },
     {
-      command: 'node scripts/e2e-server.mjs',
+      command: 'node node_modules/next/dist/bin/next dev -p 3001',
+      env: { NEXT_PUBLIC_API_URL: 'http://localhost:4001/api', NEXT_DIST_DIR: '.next-e2e' },
       url: 'http://localhost:3001',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       timeout: 120_000,
     },
   ],

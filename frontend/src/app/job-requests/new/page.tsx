@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useNotice } from '@/components/ui/NoticeProvider';
 import { useRouter } from 'next/navigation';
 import { Briefcase, MapPin, ShieldCheck, Lock } from 'lucide-react';
 import { jobRequestsApi, categoriesApi } from '@/services/api/endpoints';
@@ -12,9 +13,11 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { ImageUploader, PublicationImage } from '@/components/ui/ImageUploader';
 import { ROUTES } from '@/constants/routes';
 
 export default function NewJobRequestPage() {
+  const showNotice = useNotice();
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [editRequestId, setEditRequestId] = useState<string | null>(null);
@@ -32,8 +35,8 @@ export default function NewJobRequestPage() {
   const [budgetMin, setBudgetMin] = useState('');
   const [budgetMax, setBudgetMax] = useState('');
   const [requiredDate, setRequiredDate] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
+  const [images, setImages] = useState<PublicationImage[]>([]);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -67,16 +70,14 @@ export default function NewJobRequestPage() {
             ? { lat: Number(request.latitude), lng: Number(request.longitude) }
             : null,
         );
-        const urls = request.images?.map((image) => image.imageUrl) || [];
-        setExistingImageUrls(urls);
-        setImageUrl(urls[0] || '');
+        setImages(request.images || []);
       })
       .catch((err: Error) => setError(err.message || 'No se pudo cargar la solicitud para editar'));
   }, [editRequestId, isAuthenticated]);
 
   const handleDetectGeo = () => {
     if (!navigator.geolocation) {
-      alert('Tu navegador no soporta geolocalización.');
+      showNotice('Tu navegador no soporta geolocalización.');
       return;
     }
     setIsDetectingGeo(true);
@@ -91,7 +92,7 @@ export default function NewJobRequestPage() {
       },
       () => {
         setIsDetectingGeo(false);
-        alert('No se pudo obtener la ubicación.');
+        showNotice('No se pudo obtener la ubicación.');
       },
       { timeout: 8000 },
     );
@@ -99,6 +100,7 @@ export default function NewJobRequestPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isUploadingImages) return;
     if (!isAuthenticated) {
       router.push(ROUTES.LOGIN);
       return;
@@ -113,9 +115,6 @@ export default function NewJobRequestPage() {
     setError('');
 
     try {
-      const imageUrls = imageUrl.trim()
-        ? [imageUrl.trim(), ...existingImageUrls.slice(1)]
-        : [];
       const requestData = {
         title: title.trim(),
         description: description.trim(),
@@ -127,7 +126,7 @@ export default function NewJobRequestPage() {
         budgetMin: budgetMin ? Number(budgetMin) : undefined,
         budgetMax: budgetMax ? Number(budgetMax) : undefined,
         requiredDate: requiredDate || undefined,
-        imageUrls,
+        images: images.map(({ imageUrl, isIllustrative }) => ({ imageUrl, isIllustrative })),
       };
       const newRequest = isEditing && editRequestId
         ? await jobRequestsApi.update(editRequestId, requestData)
@@ -276,13 +275,7 @@ export default function NewJobRequestPage() {
             </div>
           </div>
 
-          <Input
-            label="Fotografía del Problema o Área (URL de imagen)"
-            placeholder="https://ejemplo.com/foto-fuga.jpg"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            helperText="Ayuda a los profesionales a darte una cotización más exacta."
-          />
+          <ImageUploader images={images} onChange={setImages} onBusyChange={setIsUploadingImages} disabled={isLoading || !isAuthenticated} />
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
             <Button
@@ -298,6 +291,7 @@ export default function NewJobRequestPage() {
               variant="primary"
               size="lg"
               isLoading={isLoading}
+              disabled={isUploadingImages}
               className="font-bold"
             >
               {isEditing ? 'Guardar Cambios' : 'Publicar Solicitud'}

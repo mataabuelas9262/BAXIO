@@ -3,7 +3,6 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 const backendRoot = join(__dirname, '..');
-const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 function getDevelopmentDatabaseUrl() {
   const envPath = join(backendRoot, '.env');
@@ -33,6 +32,7 @@ export function getE2eEnvironment() {
     NODE_ENV: 'test',
     PORT: '4001',
     FRONTEND_URL: 'http://localhost:3001',
+    UPLOADS_DIR: join(backendRoot, 'uploads-e2e'),
   };
 }
 
@@ -40,16 +40,14 @@ export function resetE2eDatabase() {
   const env = getE2eEnvironment();
   console.log('Preparando base de datos aislada para E2E…');
 
-  execFileSync(npxCommand, ['prisma', 'db', 'push', '--force-reset', '--skip-generate'], {
+  execFileSync(process.execPath, [require.resolve('prisma/build/index.js'), 'db', 'push', '--force-reset', '--skip-generate'], {
     cwd: backendRoot,
     env,
     stdio: 'inherit',
-    shell: process.platform === 'win32',
   });
-  execFileSync(npxCommand, ['ts-node', 'prisma/seed.ts'], {
+  execFileSync(process.execPath, [require.resolve('ts-node/dist/bin.js'), 'prisma/seed.ts'], {
     cwd: backendRoot,
     env,
     stdio: 'inherit',
-    shell: process.platform === 'win32',
   });
 }

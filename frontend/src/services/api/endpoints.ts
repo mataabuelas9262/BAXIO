@@ -73,6 +73,7 @@ export const servicesApi = {
     longitude?: number;
     serviceRadiusKm?: number;
     imageUrls?: string[];
+    images?: Array<{ imageUrl: string; isIllustrative?: boolean }>;
   }): Promise<Service> => {
     return apiClient.post('/services', data);
   },
@@ -85,6 +86,7 @@ export const servicesApi = {
     location: string;
     serviceArea: string;
     imageUrls: string[];
+    images: Array<{ imageUrl: string; isIllustrative?: boolean }>;
   }>): Promise<Service> => apiClient.patch(`/services/${id}`, data),
   delete: async (id: string): Promise<{ message: string }> => apiClient.delete(`/services/${id}`),
 };
@@ -119,6 +121,7 @@ export const jobRequestsApi = {
     budgetMax?: number;
     requiredDate?: string;
     imageUrls?: string[];
+    images?: Array<{ imageUrl: string; isIllustrative?: boolean }>;
   }): Promise<JobRequest> => {
     return apiClient.post('/job-requests', data);
   },
@@ -134,6 +137,7 @@ export const jobRequestsApi = {
     budgetMax: number;
     requiredDate: string;
     imageUrls: string[];
+    images: Array<{ imageUrl: string; isIllustrative?: boolean }>;
   }>): Promise<JobRequest> => apiClient.patch(`/job-requests/${id}`, data),
   delete: async (id: string): Promise<{ message: string }> => apiClient.delete(`/job-requests/${id}`),
 };
@@ -220,6 +224,10 @@ export const credentialsApi = {
 
 // UPLOADS ENDPOINTS
 export const uploadsApi = {
+  uploadImage: async (file: File): Promise<{ url: string; width: number; height: number }> => {
+    const data = new FormData(); data.append('file', file);
+    return apiClient.post('/uploads/image', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
   uploadEvidence: async (file: File): Promise<{ url: string; filename: string; size: number }> => {
     const formData = new FormData();
     formData.append('file', file);

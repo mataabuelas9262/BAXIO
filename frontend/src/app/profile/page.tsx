@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useNotice } from '@/components/ui/NoticeProvider';
 import { useRouter } from 'next/navigation';
 import {
   User as UserIcon,
@@ -44,6 +45,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ROUTES } from '@/constants/routes';
 
 export default function ProfilePage() {
+  const showNotice = useNotice();
   const { user, isAuthenticated, refreshUser } = useAuth();
   const router = useRouter();
 
@@ -185,7 +187,7 @@ export default function ProfilePage() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.size > 5 * 1024 * 1024) {
-        alert('La imagen no debe exceder 5 MB');
+        showNotice('La imagen no debe exceder 5 MB');
         return;
       }
 
@@ -199,7 +201,7 @@ export default function ProfilePage() {
         setAvatarNotice('¡Foto de perfil actualizada con éxito!');
         setTimeout(() => setAvatarNotice(''), 4000);
       } catch (err: any) {
-        alert(err.message || 'Error al subir foto de perfil');
+        showNotice(err.message || 'Error al subir foto de perfil');
       } finally {
         setIsUploadingAvatar(false);
       }
@@ -210,7 +212,7 @@ export default function ProfilePage() {
   const handleCreateCredential = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!credTitle.trim() || !credIssuer.trim()) {
-      alert('Por favor indica el nombre de la credencial y la institución emisora');
+      showNotice('Por favor indica el nombre de la credencial y la institución emisora');
       return;
     }
 
@@ -219,12 +221,8 @@ export default function ProfilePage() {
 
     try {
       if (selectedCredFile) {
-        try {
-          const uploadRes = await uploadsApi.uploadEvidence(selectedCredFile);
-          uploadedEvidenceUrl = uploadRes.url;
-        } catch {
-          uploadedEvidenceUrl = `/uploads/${Date.now()}-${selectedCredFile.name}`;
-        }
+        const uploadRes = await uploadsApi.uploadEvidence(selectedCredFile);
+        uploadedEvidenceUrl = uploadRes.url;
       }
 
       await credentialsApi.create({
@@ -252,7 +250,7 @@ export default function ProfilePage() {
       );
       setTimeout(() => setCredNotice(''), 7000);
     } catch (err: any) {
-      alert(err.message || 'Error al registrar credencial');
+      showNotice(err.message || 'Error al registrar credencial');
     } finally {
       setIsSubmittingCred(false);
     }
@@ -263,7 +261,7 @@ export default function ProfilePage() {
       await credentialsApi.delete(id);
       await loadData();
     } catch (err: any) {
-      alert(err.message || 'Error al eliminar');
+      showNotice(err.message || 'Error al eliminar');
     }
   };
 
@@ -296,7 +294,7 @@ export default function ProfilePage() {
   const handleSaveExperience = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!expRole.trim()) {
-      alert('Por favor indica el puesto o actividad principal');
+      showNotice('Por favor indica el puesto o actividad principal');
       return;
     }
 
@@ -305,21 +303,21 @@ export default function ProfilePage() {
     const endY = expEndYear ? Number(expEndYear) : undefined;
 
     if (isNaN(startY) || startY < 1960 || startY > currentYear) {
-      alert(`El año de inicio debe ser un año válido entre 1960 y ${currentYear}`);
+      showNotice(`El año de inicio debe ser un año válido entre 1960 y ${currentYear}`);
       return;
     }
 
     if (!expIsCurrent) {
       if (!endY || isNaN(endY)) {
-        alert('Por favor indica el año de fin o marca la casilla "Actualmente activo"');
+        showNotice('Por favor indica el año de fin o marca la casilla "Actualmente activo"');
         return;
       }
       if (endY < startY) {
-        alert('El año de fin no puede ser menor al año de inicio');
+        showNotice('El año de fin no puede ser menor al año de inicio');
         return;
       }
       if (endY > currentYear + 1) {
-        alert(`El año de fin no puede ser superior a ${currentYear + 1}`);
+        showNotice(`El año de fin no puede ser superior a ${currentYear + 1}`);
         return;
       }
     }
@@ -345,7 +343,7 @@ export default function ProfilePage() {
       await loadData();
       setIsExpModalOpen(false);
     } catch (err: any) {
-      alert(err.message || 'Error al guardar experiencia');
+      showNotice(err.message || 'Error al guardar experiencia');
     } finally {
       setIsSubmittingExp(false);
     }
@@ -356,7 +354,7 @@ export default function ProfilePage() {
       await experiencesApi.delete(id);
       await loadData();
     } catch (err: any) {
-      alert(err.message || 'Error al eliminar');
+      showNotice(err.message || 'Error al eliminar');
     }
   };
 
@@ -800,6 +798,7 @@ export default function ProfilePage() {
             <input
               type="file"
               ref={credFileRef}
+              aria-label="Archivo de evidencia"
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
                   setSelectedCredFile(e.target.files[0]);
@@ -847,7 +846,7 @@ export default function ProfilePage() {
                     Haz clic para subir tu documento o constancia
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Admite PDF, JPG o PNG (máximo 10 MB). Privado y seguro.
+                    PDF hasta 10 MB; fotos JPG, PNG o WebP hasta 5 MB.
                   </p>
                 </div>
               </button>

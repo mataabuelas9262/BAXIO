@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import { useNotice } from '@/components/ui/NoticeProvider';
 import { useSearchParams } from 'next/navigation';
 import { Search, Filter, Wrench, Briefcase, Users, MapPin, SlidersHorizontal } from 'lucide-react';
 import { servicesApi, jobRequestsApi, categoriesApi, usersApi } from '@/services/api/endpoints';
@@ -13,6 +14,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 function ExploreContent() {
+  const showNotice = useNotice();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('query') || '';
   const initialCategory = searchParams.get('category') || '';
@@ -48,7 +50,7 @@ function ExploreContent() {
     }
 
     if (!navigator.geolocation) {
-      alert('Tu navegador no soporta geolocalización.');
+      showNotice('Tu navegador no soporta geolocalización.');
       return;
     }
 

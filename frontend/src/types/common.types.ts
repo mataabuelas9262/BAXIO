@@ -82,6 +82,7 @@ export interface Category {
 }
 
 export interface ServiceImage {
+  isIllustrative?: boolean;
   id: string;
   imageUrl: string;
   order: number;
@@ -148,7 +149,7 @@ export interface JobRequest {
     clientRatingCnt: number;
   };
   category: Category;
-  images: Array<{ id: string; imageUrl: string }>;
+  images: Array<{ id: string; imageUrl: string; isIllustrative?: boolean }>;
   proposals?: Proposal[];
   workOrder?: WorkOrder | null;
   _count?: {

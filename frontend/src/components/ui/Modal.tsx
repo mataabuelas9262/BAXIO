@@ -57,7 +57,7 @@ export const Modal: React.FC<ModalProps> = ({
       />
 
       {/* Modal Box */}
-      <div
+      <div role="dialog" aria-modal="true" aria-label={title}
         className={cn(
           'relative w-full bg-white rounded-2xl shadow-2xl border border-slate-100 p-6 z-10 max-h-[90vh] overflow-y-auto',
           'transform transition-all duration-200 scale-100',

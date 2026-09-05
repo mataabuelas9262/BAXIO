@@ -1,3 +1,6 @@
+import { ArrayMaxSize, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ImageInputDto } from '../../uploads/image-input.dto';
 import {
   IsArray,
   IsEnum,
@@ -42,4 +45,6 @@ export class CreateServiceDto {
   @IsArray()
   @IsString({ each: true })
   imageUrls?: string[];
+  @IsOptional() @IsArray() @ArrayMaxSize(6) @ValidateNested({ each: true }) @Type(() => ImageInputDto)
+  images?: ImageInputDto[];
 }

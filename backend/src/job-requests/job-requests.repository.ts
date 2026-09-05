@@ -147,18 +147,12 @@ export class JobRequestsRepository {
   }
 
   async create(userId: string, dto: CreateJobRequestDto) {
-    const { imageUrls, ...data } = dto;
+    const { imageUrls, images, ...data } = dto;
     return this.prisma.jobRequest.create({
       data: {
         ...data,
         userId,
-        images: imageUrls && imageUrls.length > 0
-          ? {
-              create: imageUrls.map((url) => ({
-                imageUrl: url,
-              })),
-            }
-          : undefined,
+        images: images?.length ? { create: images.map((image, order) => ({ ...image })) } : undefined,
       },
       include: {
         category: true,
@@ -168,17 +162,17 @@ export class JobRequestsRepository {
   }
 
   async update(id: string, dto: UpdateJobRequestDto) {
-    const { imageUrls, ...data } = dto;
+    const { imageUrls, images, ...data } = dto;
     return this.prisma.jobRequest.update({
       where: { id },
       data: {
         ...data,
-        ...(imageUrls !== undefined
+        ...(images !== undefined
           ? {
               images: {
                 deleteMany: {},
-                ...(imageUrls.length > 0
-                  ? { create: imageUrls.map((imageUrl) => ({ imageUrl })) }
+                ...(images.length > 0
+                  ? { create: images.map((image) => ({ ...image })) }
                   : {}),
               },
             }

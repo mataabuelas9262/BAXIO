@@ -1,3 +1,4 @@
+import { normalizeImages } from '../uploads/uploads.storage';
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { JobRequestsRepository } from './job-requests.repository';
 import { CreateJobRequestDto } from './dto/create-job-request.dto';
@@ -51,8 +52,11 @@ export class JobRequestsService {
   }
 
   async createJobRequest(userId: string, dto: CreateJobRequestDto) {
+    const images = await normalizeImages(userId, dto);
     const normalizedDto: CreateJobRequestDto = {
       ...dto,
+      imageUrls: undefined,
+      images,
       title: this.normalizeRequiredText(dto.title, 'El título'),
       description: this.normalizeRequiredText(dto.description, 'La descripción'),
       categoryId: this.normalizeRequiredText(dto.categoryId, 'La categoría'),
@@ -76,8 +80,11 @@ export class JobRequestsService {
     ) {
       throw new BadRequestException('No puedes editar una solicitud que ya tiene una contratación');
     }
+    const images = await normalizeImages(userId, dto, jobRequest.images);
     const normalizedDto: UpdateJobRequestDto = {
       ...dto,
+      imageUrls: undefined,
+      images,
       ...(dto.title !== undefined
         ? { title: this.normalizeRequiredText(dto.title, 'El título') }
         : {}),

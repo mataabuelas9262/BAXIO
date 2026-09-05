@@ -3,13 +3,16 @@ import { NextRequest, NextResponse } from 'next/server';
 export function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const isDevelopment = process.env.NODE_ENV !== 'production';
+  const configuredApi = process.env.NEXT_PUBLIC_API_URL;
+  const apiOrigin = configuredApi?.startsWith('https://') ? new URL(configuredApi).origin : '';
+  const imageSources = (process.env.IMAGE_SOURCE_ORIGINS ?? 'https:').split(',').map(source => source.trim()).filter(source => source === 'https:' || /^https:\/\/[a-zA-Z0-9.-]+(?::\d+)?$/.test(source)).join(' ');
   const contentSecurityPolicy = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDevelopment ? " 'unsafe-eval'" : ''}`,
     `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com${isDevelopment ? " 'unsafe-inline'" : ''}`,
     "font-src 'self' data: https://fonts.gstatic.com",
-    "img-src 'self' data: blob: https:",
-    `connect-src 'self'${isDevelopment ? ' http://localhost:4000 http://127.0.0.1:4000 http://localhost:4001 http://127.0.0.1:4001' : ''}`,
+    `img-src 'self' data: blob: ${imageSources}`,
+    `connect-src 'self' ${apiOrigin}${isDevelopment ? ' http://localhost:4000 http://127.0.0.1:4000 http://localhost:4001 http://127.0.0.1:4001' : ''}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

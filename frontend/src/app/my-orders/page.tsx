@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useNotice } from '@/components/ui/NoticeProvider';
 import Link from 'next/link';
 import {
   ClipboardList,
@@ -34,6 +35,7 @@ import { ContactChannelButtons } from '@/components/ui/ContactChannelButtons';
 import { ROUTES } from '@/constants/routes';
 
 export default function MyOrdersPage() {
+  const showNotice = useNotice();
   const { user, isAuthenticated } = useAuth();
   const [orders, setOrders] = useState<WorkOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +81,7 @@ export default function MyOrdersPage() {
       await workOrdersApi.updateStatus(orderId, 'COMPLETION_PENDING');
       await loadOrders();
     } catch (err: any) {
-      alert(err.message || 'Error al solicitar finalización');
+      showNotice(err.message || 'Error al solicitar finalización');
     } finally {
       setUpdatingId(null);
       setConfirmation(null);
@@ -100,7 +102,7 @@ export default function MyOrdersPage() {
         targetRole: 'profesional',
       });
     } catch (err: any) {
-      alert(err.message || 'Error al confirmar la finalización del trabajo');
+      showNotice(err.message || 'Error al confirmar la finalización del trabajo');
     } finally {
       setUpdatingId(null);
       setConfirmation(null);

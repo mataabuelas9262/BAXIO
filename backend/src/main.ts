@@ -5,6 +5,7 @@ import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import { NextFunction, Request, Response } from 'express';
 import { join } from 'path';
+import { getUploadsDir } from './uploads/uploads.storage';
 
 async function bootstrap() {
   const logger = new Logger('BAXIO_Bootstrap');
@@ -28,7 +29,9 @@ async function bootstrap() {
 
   // Habilitar CORS con soporte de cookies y credenciales
   app.enableCors({
-    origin: [frontendUrl, 'http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: process.env.NODE_ENV === 'production'
+      ? frontendUrl.split(',').map(origin => origin.trim())
+      : [frontendUrl, 'http://localhost:3000', 'http://127.0.0.1:3000'],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization',
@@ -38,7 +41,13 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Servir archivos estáticos de uploads de forma segura
-  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
+  app.use('/uploads', express.static(getUploadsDir(), {
+    dotfiles: 'deny',
+    setHeaders: (res, path) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      if (path.toLowerCase().endsWith('.pdf')) res.setHeader('Content-Disposition', 'attachment');
+    },
+  }));
 
   // Prefijo global de la API REST
   app.setGlobalPrefix('api');

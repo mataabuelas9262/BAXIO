@@ -90,6 +90,7 @@ export default function ServiceDetailPage() {
       : [
           {
             id: 'default',
+            isIllustrative: true,
             imageUrl:
               'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1000&auto=format&fit=crop&q=80',
             order: 0,
@@ -150,6 +151,7 @@ export default function ServiceDetailPage() {
                   onError={() => setFailedImageIndexes((indexes) => Array.from(new Set([...indexes, activeImageIndex])))}
                 />
               )}
+              {images[activeImageIndex].isIllustrative && <span className="absolute bottom-3 left-3 rounded bg-slate-900/90 px-3 py-1 text-xs text-white">Imagen ilustrativa</span>}
               <div className="absolute top-4 left-4">
                 <Badge variant="brand" size="md" className="shadow-md bg-white/95 font-bold">
                   {service.category.name}

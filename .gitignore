@@ -39,6 +39,7 @@ Thumbs.db
 /backend/uploads/
 /backend/uploads-e2e/
 .next-e2e/
+.next-build/
 playwright-report/
 test-results/
 *.tsbuildinfo

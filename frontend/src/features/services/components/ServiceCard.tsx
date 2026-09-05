@@ -54,6 +54,7 @@ export const ServiceCard: React.FC<{ service: Service }> = ({ service }) => {
               onError={() => setHasImageError(true)}
             />
           )}
+          {service.images?.[0]?.isIllustrative && <span className="absolute bottom-2 left-2 rounded bg-slate-900/90 px-2 py-1 text-xs text-white">Imagen ilustrativa</span>}
           <div className="absolute top-3 left-3">
             <Badge variant="brand" size="sm" className="shadow-sm font-semibold bg-white/95 backdrop-blur-sm">
               {service.category.name}

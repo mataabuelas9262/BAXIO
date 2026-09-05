@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useNotice } from '@/components/ui/NoticeProvider';
 import { Star } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -24,6 +25,7 @@ export function ReviewModal({
   targetRole,
   onSuccess,
 }: ReviewModalProps) {
+  const showNotice = useNotice();
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [comment, setComment] = useState('');
@@ -42,7 +44,7 @@ export function ReviewModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rating || rating < 1 || rating > 5) {
-      alert('Por favor selecciona una calificación de 1 a 5 estrellas');
+      showNotice('Por favor selecciona una calificación de 1 a 5 estrellas');
       return;
     }
 
@@ -56,7 +58,7 @@ export function ReviewModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Error al registrar la calificación');
+      showNotice(err.message || 'Error al registrar la calificación');
     } finally {
       setIsSubmitting(false);
     }

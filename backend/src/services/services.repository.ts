@@ -137,19 +137,12 @@ export class ServicesRepository {
   }
 
   async create(userId: string, dto: CreateServiceDto) {
-    const { imageUrls, ...data } = dto;
+    const { imageUrls, images, ...data } = dto;
     return this.prisma.service.create({
       data: {
         ...data,
         userId,
-        images: imageUrls && imageUrls.length > 0
-          ? {
-              create: imageUrls.map((url, idx) => ({
-                imageUrl: url,
-                order: idx,
-              })),
-            }
-          : undefined,
+        images: images?.length ? { create: images.map((image, order) => ({ ...image, order })) } : undefined,
       },
       include: {
         category: true,
@@ -170,13 +163,13 @@ export class ServicesRepository {
   }
 
   async update(id: string, dto: UpdateServiceDto) {
-    const { imageUrls, ...data } = dto;
+    const { imageUrls, images, ...data } = dto;
     return this.prisma.service.update({
       where: { id },
       data: {
         ...data,
-        ...(imageUrls !== undefined
-          ? { images: { deleteMany: {}, create: imageUrls.map((imageUrl, order) => ({ imageUrl, order })) } }
+        ...(images !== undefined
+          ? { images: { deleteMany: {}, create: images.map((image, order) => ({ ...image, order })) } }
           : {}),
       },
       include: { category: true, images: true, user: { select: { id: true, fullName: true, avatarUrl: true } } },
