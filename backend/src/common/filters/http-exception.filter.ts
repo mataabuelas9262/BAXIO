@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 
 @Catch()
@@ -31,8 +32,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message = res;
         error = exception.name;
       }
+    } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      if (['P2002', 'P2025', 'P2034'].includes(exception.code)) {
+        status = HttpStatus.CONFLICT;
+        error = 'Conflict';
+        message = 'La operación entra en conflicto con un cambio existente. Actualiza e inténtalo de nuevo.';
+      } else if (['P2024', 'P2028', 'P2037'].includes(exception.code)) {
+        status = HttpStatus.SERVICE_UNAVAILABLE;
+        error = 'Service Unavailable';
+        message = 'El servidor está ocupado. Inténtalo de nuevo en unos segundos.';
+        response.setHeader('Retry-After', '3');
+      }
+      this.logger.error('Database request failed: ' + exception.code);
     } else if (exception instanceof Error) {
-      message = exception.message;
       this.logger.error(`Unhandled Error: ${exception.message}`, exception.stack);
     }
 

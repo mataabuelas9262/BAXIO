@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useNotice } from '@/components/ui/NoticeProvider';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Search, PlusCircle, Briefcase, MapPin, SlidersHorizontal } from 'lucide-react';
 import { jobRequestsApi, categoriesApi } from '@/services/api/endpoints';
 import { JobRequest, Category } from '@/types/common.types';
@@ -13,12 +15,16 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ROUTES } from '@/constants/routes';
 
-export default function JobRequestsBoardPage() {
+function JobRequestsBoardContent() {
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get('query') || '';
+  const urlCategory = searchParams.get('category') || '';
   const showNotice = useNotice();
   const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(urlCategory);
+  const [searchQuery, setSearchQuery] = useState(urlQuery);
+  const debouncedQuery = useDebouncedValue(searchQuery.trim());
   const [isLoading, setIsLoading] = useState(true);
 
   // Estados de Geolocalización y Proximidad
@@ -32,8 +38,9 @@ export default function JobRequestsBoardPage() {
   }, []);
 
   useEffect(() => {
-    setSelectedCategory(new URLSearchParams(window.location.search).get('category') || '');
-  }, []);
+    setSelectedCategory(urlCategory);
+    setSearchQuery(urlQuery);
+  }, [urlQuery, urlCategory]);
 
   const handleToggleNearMe = () => {
     if (isNearMeActive) {
@@ -72,23 +79,30 @@ export default function JobRequestsBoardPage() {
   };
 
   useEffect(() => {
+    let cancelled = false;
     async function loadRequests() {
       setIsLoading(true);
       try {
         const res = await jobRequestsApi.getAll({
-          query: searchQuery || undefined,
+          query: debouncedQuery || undefined,
           categorySlug: selectedCategory || undefined,
           userLat: isNearMeActive ? userCoords?.lat : undefined,
           userLng: isNearMeActive ? userCoords?.lng : undefined,
           maxRadiusKm: isNearMeActive ? maxRadiusKm : undefined,
         });
-        setJobRequests(res);
+        if (!cancelled) setJobRequests(res);
+      } catch (error) {
+        if (!cancelled) {
+          setJobRequests([]);
+          showNotice(error instanceof Error ? error.message : 'No se pudieron cargar los resultados.');
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
     loadRequests();
-  }, [searchQuery, selectedCategory, isNearMeActive, userCoords, maxRadiusKm]);
+    return () => { cancelled = true; };
+  }, [debouncedQuery, selectedCategory, isNearMeActive, userCoords, maxRadiusKm]);
 
   return (
     <PageContainer>
@@ -220,5 +234,13 @@ export default function JobRequestsBoardPage() {
         />
       )}
     </PageContainer>
+  );
+}
+
+export default function JobRequestsBoardPage() {
+  return (
+    <Suspense fallback={<LoadingState message="Cargando solicitudes..." />}>
+      <JobRequestsBoardContent />
+    </Suspense>
   );
 }

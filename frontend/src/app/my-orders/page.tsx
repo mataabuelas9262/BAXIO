@@ -259,15 +259,15 @@ export default function MyOrdersPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    leftIcon={<MessageCircle className="w-4 h-4" />}
+                    className="baxio-conversation-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+                    title="Consulta los mensajes y el seguimiento de este trabajo"
                     onClick={() => setChatOrder(order)}
                   >
-                    Mensajes
-                  </Button>
+                    <MessageCircle className="h-4 w-4" />
+                    Ver conversación
+                  </button>
                 </div>
 
                 {counterpart && <ContactChannelButtons user={counterpart} />}

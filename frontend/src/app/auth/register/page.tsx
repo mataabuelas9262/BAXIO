@@ -9,6 +9,8 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { OtpChallenge } from '@/features/auth/components/OtpChallenge';
+import { AuthStep } from '@/services/api/endpoints';
 import { ROUTES } from '@/constants/routes';
 
 export default function RegisterPage() {
@@ -21,6 +23,7 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState('');
   const [location, setLocation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [challenge, setChallenge] = useState<AuthStep | null>(null);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,20 +42,24 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      await register({
+      const result = await register({
         fullName: fullName.trim(),
         email: email.trim(),
         password,
         phone: phone.trim() || undefined,
         location: location.trim() || undefined,
       });
-      router.push(ROUTES.HOME);
+      setPassword('');
+      if ('step' in result) setChallenge(result);
+      else router.push(ROUTES.HOME);
     } catch (err: any) {
       setError(err.message || 'Error al registrar la cuenta');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (challenge) return <PageContainer size="sm" className="py-12 md:py-20 flex justify-center"><Card className="w-full max-w-md p-6 sm:p-8"><OtpChallenge initial={challenge} onDone={() => router.push(ROUTES.HOME)} onBack={() => setChallenge(null)} /></Card></PageContainer>;
 
   return (
     <PageContainer size="sm" className="py-12 md:py-20 flex justify-center">

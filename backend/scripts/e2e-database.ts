@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { execFileSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
@@ -30,6 +31,10 @@ export function getE2eEnvironment() {
     ...process.env,
     DATABASE_URL: databaseUrl.toString(),
     NODE_ENV: 'test',
+    JWT_SECRET: randomBytes(64).toString('hex'),
+    MFA_ENCRYPTION_KEY: 'ab'.repeat(32),
+    MAIL_MODE: 'preview',
+    MAIL_PREVIEW_DIR: join(backendRoot, '.mail-preview-e2e'),
     PORT: '4001',
     FRONTEND_URL: 'http://localhost:3001',
     UPLOADS_DIR: join(backendRoot, 'uploads-e2e'),

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProposalDto } from './dto/create-proposal.dto';
 
@@ -41,7 +41,12 @@ export class ProposalsRepository {
   }
 
   async create(workerId: string, dto: CreateProposalDto) {
-    return this.prisma.proposal.create({
+    return this.prisma.withTransaction(async tx => {
+      const request = await tx.jobRequest.findUnique({ where: { id: dto.jobRequestId } });
+      if (!request || request.status !== 'OPEN' || request.userId === workerId) {
+        throw new ConflictException('La solicitud ya no permite esta propuesta.');
+      }
+      return tx.proposal.create({
       data: {
         workerId,
         jobRequestId: dto.jobRequestId,
@@ -60,6 +65,7 @@ export class ProposalsRepository {
           },
         },
       },
+      });
     });
   }
 
@@ -99,18 +105,18 @@ export class ProposalsRepository {
     workerId: string,
     agreedPrice: number,
   ) {
-    return this.prisma.$transaction(async (tx) => {
-      // 1. Aceptar la propuesta ganadora
-      const acceptedProposal = await tx.proposal.update({
-        where: { id: proposalId },
-        data: { status: 'ACCEPTED' },
-      });
-
-      // 2. Cerrar la solicitud y marcarla como asignada
-      await tx.jobRequest.update({
-        where: { id: jobRequestId },
+    return this.prisma.withTransaction(async (tx) => {
+      const claimed = await tx.jobRequest.updateMany({
+        where: { id: jobRequestId, userId: clientId, status: 'OPEN' },
         data: { status: 'ASSIGNED' },
       });
+      if (claimed.count !== 1) throw new ConflictException('Esta solicitud ya fue asignada o cerrada.');
+      const accepted = await tx.proposal.updateMany({
+        where: { id: proposalId, jobRequestId, workerId, status: 'PENDING' },
+        data: { status: 'ACCEPTED' },
+      });
+      if (accepted.count !== 1) throw new ConflictException('Esta propuesta ya no está pendiente.');
+      const acceptedProposal = await tx.proposal.findUniqueOrThrow({ where: { id: proposalId } });
 
       // 3. Crear la WorkOrder vinculando cliente, trabajador, solicitud y propuesta
       const workOrder = await tx.workOrder.create({

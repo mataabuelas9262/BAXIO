@@ -273,7 +273,27 @@ export default function ServiceDetailPage() {
             </div>
 
             {isOwnService ? (
-              <div className="space-y-2"><div className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-3 text-center text-xs font-semibold text-brand-800">Este es tu servicio publicado</div><Link href={`/services/new?edit=${service.id}`}><Button variant="outline" size="sm" className="w-full" leftIcon={<Pencil className="w-4 h-4" />}>Editar servicio</Button></Link><Button variant="outline" size="sm" className="w-full text-rose-700 border-rose-200 hover:bg-rose-50" leftIcon={<Trash2 className="w-4 h-4" />} onClick={() => setShowDeleteConfirm(true)}>Eliminar servicio</Button></div>
+              <div className="flex flex-col gap-3">
+                <p className="flex items-center justify-center gap-2 rounded-xl bg-brand-50 px-3 py-3 text-xs font-medium text-brand-800 dark:bg-brand-950/50 dark:text-brand-200">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  Este es tu servicio publicado
+                </p>
+                <Link
+                  href={`/services/new?edit=${service.id}`}
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Editar servicio
+                </Link>
+                <button
+                  type="button"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 dark:border-rose-400/30 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/60 dark:focus-visible:ring-offset-slate-900"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Eliminar servicio
+                </button>
+              </div>
             ) : (
               <Button variant="quote" size="lg" className="w-full font-bold" leftIcon={<MessageSquare className="w-5 h-5" />} onClick={() => setIsContactModalOpen(true)}>
                 Solicitar cotización

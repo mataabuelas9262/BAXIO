@@ -129,6 +129,9 @@ model User {
   blockedUsers       UserBlock[]     @relation("BlocksCreated")
   blockedByUsers     UserBlock[]     @relation("BlocksReceived")
 
+  accountSecurity AccountSecurity?
+  authChallenges AuthChallenge[]
+
   @@index([email])
 }
 
@@ -468,4 +471,40 @@ model Notification {
 
   @@index([userId])
   @@index([isRead])
+}
+
+model AccountSecurity {
+  userId String @id
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailVerifiedAt DateTime?
+  emailRequired Boolean @default(false)
+  verifiedPhone String? @db.VarChar(16)
+  phoneVerifiedAt DateTime?
+  recoveryAttempts Int @default(0)
+  recoveryLockedUntil DateTime?
+  totpSecret String? @db.Text
+  pendingSecret String? @db.Text
+  pendingExpiresAt DateTime?
+  twoFactorEnabled Boolean @default(false)
+  lastTotpStep BigInt @default(-1)
+  recoveryHashes Json?
+  sessionVersion Int @default(0)
+  failedAttempts Int @default(0)
+  lockedUntil DateTime?
+}
+
+model AuthChallenge {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose String @db.VarChar(32)
+  tokenHash String @unique @db.VarChar(64)
+  codeHash String? @db.VarChar(64)
+  destination String? @db.VarChar(191)
+  sessionVersion Int
+  attempts Int @default(0)
+  expiresAt DateTime
+  sentAt DateTime @default(now())
+  @@unique([userId, purpose])
+  @@index([expiresAt])
 }

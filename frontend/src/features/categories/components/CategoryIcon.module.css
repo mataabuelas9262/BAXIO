@@ -1,0 +1,71 @@
+.icon {
+  display: inline-block;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.minisplits-y-climas {
+  -webkit-mask-image: url('/icons/categories/minisplits-y-climas.svg');
+  mask-image: url('/icons/categories/minisplits-y-climas.svg');
+}
+
+.plomeria {
+  -webkit-mask-image: url('/icons/categories/plomeria.svg');
+  mask-image: url('/icons/categories/plomeria.svg');
+}
+
+.albanileria-y-construccion {
+  -webkit-mask-image: url('/icons/categories/albanileria-y-construccion.svg');
+  mask-image: url('/icons/categories/albanileria-y-construccion.svg');
+}
+
+.automotriz-y-gruas {
+  -webkit-mask-image: url('/icons/categories/automotriz-y-gruas.svg');
+  mask-image: url('/icons/categories/automotriz-y-gruas.svg');
+}
+
+.cerrajeria-y-herreria {
+  -webkit-mask-image: url('/icons/categories/cerrajeria-y-herreria.svg');
+  mask-image: url('/icons/categories/cerrajeria-y-herreria.svg');
+}
+
+.electrodomesticos-y-linea-blanca {
+  -webkit-mask-image: url('/icons/categories/electrodomesticos-y-linea-blanca.svg');
+  mask-image: url('/icons/categories/electrodomesticos-y-linea-blanca.svg');
+}
+
+.eventos-y-servicios-para-hogar {
+  -webkit-mask-image: url('/icons/categories/eventos-y-servicios-para-hogar.svg');
+  mask-image: url('/icons/categories/eventos-y-servicios-para-hogar.svg');
+}
+
+.jardineria-y-mantenimiento-exterior {
+  -webkit-mask-image: url('/icons/categories/jardineria-y-mantenimiento-exterior.svg');
+  mask-image: url('/icons/categories/jardineria-y-mantenimiento-exterior.svg');
+}
+
+.mudanzas-y-fletes {
+  -webkit-mask-image: url('/icons/categories/mudanzas-y-fletes.svg');
+  mask-image: url('/icons/categories/mudanzas-y-fletes.svg');
+}
+
+.pintura {
+  -webkit-mask-image: url('/icons/categories/pintura.svg');
+  mask-image: url('/icons/categories/pintura.svg');
+}
+
+.seguridad-camaras-y-alarmas {
+  -webkit-mask-image: url('/icons/categories/seguridad-camaras-y-alarmas.svg');
+  mask-image: url('/icons/categories/seguridad-camaras-y-alarmas.svg');
+}
+
+.computadoras {
+  -webkit-mask-image: url('/icons/categories/computadoras.svg');
+  mask-image: url('/icons/categories/computadoras.svg');
+}

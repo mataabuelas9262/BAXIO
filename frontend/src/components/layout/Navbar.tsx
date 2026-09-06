@@ -52,7 +52,8 @@ export const Navbar: React.FC = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/explore?query=${encodeURIComponent(searchQuery.trim())}`);
+      const destination = isHiring ? ROUTES.EXPLORE : ROUTES.JOB_REQUESTS;
+      router.push(`${destination}?query=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -84,7 +85,8 @@ export const Navbar: React.FC = () => {
           <div className="relative w-full">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
-              type="text"
+              type="search"
+              aria-label={isHiring ? 'Buscar servicios' : 'Buscar chamba'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={
@@ -102,7 +104,7 @@ export const Navbar: React.FC = () => {
           <button onClick={() => setShowExploreMenu(!showExploreMenu)} className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition-colors hover:bg-slate-100 hover:text-brand-700 ${pathname === ROUTES.EXPLORE || pathname === ROUTES.JOB_REQUESTS ? 'text-brand-700 bg-brand-50' : 'text-slate-600'}`}>
             <Compass className="w-4 h-4" /> Explorar <ChevronDown className="w-3.5 h-3.5" />
           </button>
-          {showExploreMenu && <><div className="fixed inset-0 z-10" onClick={() => setShowExploreMenu(false)} /><div className="absolute right-0 mt-2 z-20 w-56 rounded-2xl border border-slate-100 bg-white p-2 shadow-xl"><Link href={ROUTES.EXPLORE} onClick={() => setShowExploreMenu(false)} className="block rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Marketplace</Link><Link href={ROUTES.JOB_REQUESTS} onClick={() => setShowExploreMenu(false)} className="block rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Tablero de solicitudes</Link></div></>}
+          {showExploreMenu && <><div className="fixed inset-0 z-10" onClick={() => setShowExploreMenu(false)} /><div className="absolute right-0 mt-2 z-20 w-56 rounded-2xl border border-slate-100 bg-white p-2 shadow-xl"><Link href={ROUTES.EXPLORE} onClick={() => setShowExploreMenu(false)} className="block rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:bg-slate-50 dark:focus-visible:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-400">Marketplace</Link><Link href={ROUTES.JOB_REQUESTS} onClick={() => setShowExploreMenu(false)} className="block rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:bg-slate-50 dark:focus-visible:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-400">Tablero de solicitudes</Link></div></>}
         </nav>
 
         {/* Actions & User Menu */}
@@ -132,9 +134,9 @@ export const Navbar: React.FC = () => {
                   <Link
                     href={ROUTES.NEW_JOB_REQUEST}
                     onClick={() => setShowPublishMenu(false)}
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:bg-slate-50 dark:focus-visible:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-400 transition-colors"
                   >
-                    <div className="p-2 rounded-lg bg-amber-50 text-amber-600 shrink-0">
+                    <div className="p-2 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300 shrink-0">
                       <Briefcase className="w-4 h-4" />
                     </div>
                     <div>
@@ -147,9 +149,9 @@ export const Navbar: React.FC = () => {
                   <Link
                     href={ROUTES.NEW_SERVICE}
                     onClick={() => setShowPublishMenu(false)}
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:bg-slate-50 dark:focus-visible:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-400 transition-colors"
                   >
-                    <div className="p-2 rounded-lg bg-brand-50 text-brand-600 shrink-0">
+                    <div className="p-2 rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-950/60 dark:text-brand-300 shrink-0">
                       <Wrench className="w-4 h-4" />
                     </div>
                     <div>
@@ -189,7 +191,7 @@ export const Navbar: React.FC = () => {
                       <Link
                         href={ROUTES.PROFILE}
                         onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 rounded-lg hover:bg-slate-50"
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:bg-slate-50 dark:focus-visible:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-400"
                       >
                         <UserIcon className="w-4 h-4 text-slate-400" />
                         Mi Perfil
@@ -197,7 +199,7 @@ export const Navbar: React.FC = () => {
                       <Link
                         href={ROUTES.MY_ORDERS}
                         onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 rounded-lg hover:bg-slate-50"
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:bg-slate-50 dark:focus-visible:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-400"
                       >
                         <ClipboardList className="w-4 h-4 text-slate-400" />
                         Mis Trabajos Contratados
@@ -209,7 +211,7 @@ export const Navbar: React.FC = () => {
                           setShowUserMenu(false);
                           logout();
                         }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-rose-600 rounded-lg hover:bg-rose-50 transition-colors text-left"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 dark:text-rose-300 transition-colors text-left"
                       >
                         <LogOut className="w-4 h-4" />
                         Cerrar Sesión

@@ -9,6 +9,8 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { OtpChallenge } from '@/features/auth/components/OtpChallenge';
+import { AuthStep } from '@/services/api/endpoints';
 import { ROUTES } from '@/constants/routes';
 
 export default function LoginPage() {
@@ -18,6 +20,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [challenge, setChallenge] = useState<AuthStep | null>(null);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,14 +34,18 @@ export default function LoginPage() {
     setError('');
 
     try {
-      await login({ email: email.trim(), password });
-      router.push(ROUTES.HOME);
+      const result = await login({ email: email.trim(), password });
+      setPassword('');
+      if ('step' in result) setChallenge(result);
+      else router.push(ROUTES.HOME);
     } catch (err: any) {
       setError(err.message || 'Credenciales inválidas');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (challenge) return <PageContainer size="sm" className="py-12 md:py-20 flex justify-center"><Card className="w-full max-w-md p-6 sm:p-8"><OtpChallenge initial={challenge} onDone={() => router.push(ROUTES.HOME)} onBack={() => setChallenge(null)} /></Card></PageContainer>;
 
   return (
     <PageContainer size="sm" className="py-12 md:py-20 flex justify-center">
@@ -83,6 +90,7 @@ export default function LoginPage() {
               required
             />
 
+            <div className="text-right"><Link href="/auth/forgot-password" className="text-sm font-semibold text-brand-600 dark:text-brand-300">Olvidé mi contraseña</Link></div>
             <div className="pt-2">
               <Button
                 type="submit"

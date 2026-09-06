@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { createApiLimiters } from './common/api-rate-limit';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
@@ -36,6 +37,10 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
+
+  const limiters = createApiLimiters();
+  app.use('/api', limiters.api);
+  app.use('/api/auth', (req: Request, res: Response, next: NextFunction) => req.method === 'POST' ? limiters.auth(req, res, next) : next());
 
   // Parseo de cookies para autenticación JWT segura
   app.use(cookieParser());

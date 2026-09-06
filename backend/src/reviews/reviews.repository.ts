@@ -12,8 +12,9 @@ export class ReviewsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(authorId: string, dto: CreateReviewDto) {
+    return this.prisma.withTransaction(async (tx) => {
     // 1. Obtener la orden de trabajo
-    const workOrder = await this.prisma.workOrder.findUnique({
+    const workOrder = await tx.workOrder.findUnique({
       where: { id: dto.workOrderId },
       include: {
         jobRequest: true,
@@ -44,7 +45,7 @@ export class ReviewsRepository {
     const targetRole = isClient ? 'WORKER' : 'CLIENT';
 
     // 3. Validar unicidad (que no haya calificado ya)
-    const existing = await this.prisma.review.findUnique({
+    const existing = await tx.review.findUnique({
       where: {
         workOrderId_authorId: {
           workOrderId: dto.workOrderId,
@@ -58,7 +59,7 @@ export class ReviewsRepository {
     }
 
     // 4. Transacción Atómica: Guardar reseña y recalcular promedios
-    return this.prisma.$transaction(async (tx) => {
+
       const review = await tx.review.create({
         data: {
           workOrderId: dto.workOrderId,

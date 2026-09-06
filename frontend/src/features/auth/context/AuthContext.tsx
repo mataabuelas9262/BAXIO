@@ -2,20 +2,21 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User } from '@/types/common.types';
-import { authApi } from '@/services/api/endpoints';
+import { authApi, AuthResult } from '@/services/api/endpoints';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<void>;
+  login: (credentials: { email: string; password: string }) => Promise<AuthResult>;
+  verifyChallenge: (token: string, code: string) => Promise<AuthResult>;
   register: (data: {
     email: string;
     password: string;
     fullName: string;
     phone?: string;
     location?: string;
-  }) => Promise<void>;
+  }) => Promise<AuthResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -53,8 +54,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (credentials: { email: string; password: string }) => {
     const result = await authApi.login(credentials);
     authVersion.current += 1;
-    setUser(result.user);
+    setUser('user' in result ? result.user : null);
     setIsLoading(false);
+    return result;
   };
 
   const register = async (data: {
@@ -66,8 +68,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }) => {
     const result = await authApi.register(data);
     authVersion.current += 1;
-    setUser(result.user);
+    setUser('user' in result ? result.user : null);
     setIsLoading(false);
+    return result;
+  };
+
+  const verifyChallenge = async (token: string, code: string) => {
+    const result = await authApi.verify(token, code);
+    if ('user' in result) { authVersion.current += 1; setUser(result.user); setIsLoading(false); }
+    return result;
   };
 
   const logout = async () => {
@@ -87,6 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         login,
         register,
+        verifyChallenge,
         logout,
         refreshUser,
       }}

@@ -27,6 +27,8 @@ jobs:
         working-directory: backend
       - run: npm ci
         working-directory: frontend
+      - run: npm run check:secrets
+        working-directory: backend
       - name: Configure isolated test database
         run: |
           printf '%s\n' 'DATABASE_URL="mysql://root:ci-only-password@127.0.0.1:3306/baxio_e2e"' 'JWT_SECRET="ci-only-session-secret-never-use-in-production"' > backend/.env

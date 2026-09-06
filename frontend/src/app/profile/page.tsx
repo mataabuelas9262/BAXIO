@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNotice } from '@/components/ui/NoticeProvider';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   User as UserIcon,
@@ -360,6 +361,7 @@ export default function ProfilePage() {
 
   return (
     <PageContainer size="md">
+      <div className="mb-5 flex justify-end"><Link href="/profile/security" className="inline-flex items-center gap-2 rounded-xl border border-brand-400/40 bg-brand-500/10 px-4 py-3 text-sm font-semibold text-brand-600 dark:text-brand-300"><ShieldCheck size={18} />Seguridad de mi cuenta</Link></div>
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           Mi Perfil BAXIO

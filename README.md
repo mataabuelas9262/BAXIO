@@ -29,7 +29,7 @@ Antes de implementarla se deben definir y probar: comisión de BAXIO, cobro al a
 
 - **Frontend:** Next.js 14+ (App Router), React 18, TypeScript, Tailwind CSS, Lucide Icons, Axios.
 - **Backend:** NestJS 10, TypeScript, Prisma ORM, MySQL, Class-Validator, Cookie-Parser, Passport-JWT.
-- **Arquitectura:** 
+- **Arquitectura:**
   - Backend: `Controller → Service → Repository → Prisma → MySQL`.
   - Frontend: `App Router → Features → Components → API Services`.
 
@@ -90,10 +90,12 @@ baxio/
    PORT=4000
    NODE_ENV=development
    DATABASE_URL="mysql://root:TU_PASSWORD_MYSQL@localhost:3306/baxio_db"
-   JWT_SECRET="baxio_super_secret_jwt_key_2026_dev_mode"
+   JWT_SECRET="REPLACE_WITH_A_RANDOM_SECRET"
    JWT_EXPIRES_IN="7d"
    FRONTEND_URL="http://localhost:3000"
    ```
+Genera un secreto privado para JWT con `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` y cópialo únicamente a `backend/.env`. Nunca reutilices ejemplos ni lo publiques.
+
 3. Instala dependencias y genera el cliente Prisma:
    ```bash
    npm install

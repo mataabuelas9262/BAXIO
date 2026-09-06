@@ -136,3 +136,33 @@ body {
   .baxio-premium-button,
   .baxio-premium-button::before { transition: none; }
 }
+
+/* Acceso al historial de trabajo: brillo discreto, sin parpadeos. */
+.baxio-conversation-button {
+  color: #075985;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border: 1px solid #7dd3fc;
+  box-shadow: 0 0 14px rgba(14, 165, 233, .12), inset 0 1px 0 rgba(255, 255, 255, .8);
+  transition: box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
+}
+.baxio-conversation-button:hover {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 20px rgba(14, 165, 233, .25), inset 0 1px 0 rgba(255, 255, 255, .8);
+}
+.baxio-conversation-button:focus-visible {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 4px;
+}
+.dark .baxio-conversation-button {
+  color: #bae6fd;
+  background: linear-gradient(135deg, #0c3047, #122b42);
+  border-color: rgba(56, 189, 248, .65);
+  box-shadow: 0 0 16px rgba(14, 165, 233, .18), inset 0 0 10px rgba(56, 189, 248, .06);
+}
+.dark .baxio-conversation-button:hover {
+  border-color: #7dd3fc;
+  box-shadow: 0 0 24px rgba(14, 165, 233, .32), inset 0 0 12px rgba(56, 189, 248, .12);
+}
+@media (prefers-reduced-motion: reduce) {
+  .baxio-conversation-button { transition: none; }
+}

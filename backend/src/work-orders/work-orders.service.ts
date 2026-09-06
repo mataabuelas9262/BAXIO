@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { WorkOrdersRepository } from './work-orders.repository';
 import { WorkOrderStatus } from '@prisma/client';
@@ -28,19 +29,23 @@ export class WorkOrdersService {
   async updateStatus(id: string, userId: string, status: WorkOrderStatus) {
     const workOrder = await this.getWorkOrderById(id, userId);
 
+    if (workOrder.status === 'COMPLETED' || workOrder.status === 'CANCELLED') {
+      if (status === workOrder.status) return workOrder;
+      throw new ConflictException('Esta orden ya está finalizada o cancelada.');
+    }
     const isClient = workOrder.clientId === userId;
     const isWorker = workOrder.workerId === userId;
 
     // Regla de negocio: El trabajador solicita finalización (COMPLETION_PENDING)
     if (isWorker && status === 'COMPLETED') {
-      return this.workOrdersRepo.updateStatus(workOrder.id, 'COMPLETION_PENDING');
+      return this.workOrdersRepo.updateStatus(workOrder.id, 'COMPLETION_PENDING', workOrder.status);
     }
 
     // El cliente puede confirmar finalización directamente a COMPLETED
     if (isClient && (status === 'COMPLETED' || status === 'COMPLETION_PENDING')) {
-      return this.workOrdersRepo.updateStatus(workOrder.id, 'COMPLETED');
+      return this.workOrdersRepo.updateStatus(workOrder.id, 'COMPLETED', workOrder.status);
     }
 
-    return this.workOrdersRepo.updateStatus(workOrder.id, status);
+    return this.workOrdersRepo.updateStatus(workOrder.id, status, workOrder.status);
   }
 }

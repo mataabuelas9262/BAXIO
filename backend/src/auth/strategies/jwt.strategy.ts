@@ -22,14 +22,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('jwt.secret', 'baxio_default_secret_key_2026'),
+      secretOrKey: configService.getOrThrow<string>('jwt.secret'),
     });
   }
 
-  async validate(payload: { sub: string; email: string }) {
+  async validate(payload: { sub: string; email: string; sessionVersion?: number }) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: {
+        accountSecurity: { select: { sessionVersion: true, emailRequired: true, emailVerifiedAt: true } },
         id: true,
         email: true,
         fullName: true,
@@ -52,6 +53,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Usuario no encontrado o sesión expirada.');
     }
 
-    return user;
+    if ((payload.sessionVersion || 0) !== (user.accountSecurity?.sessionVersion || 0) || (user.accountSecurity?.emailRequired && !user.accountSecurity.emailVerifiedAt)) {
+      throw new UnauthorizedException('La seguridad de tu cuenta cambió. Vuelve a iniciar sesión.');
+    }
+    const { accountSecurity, ...publicUser } = user;
+    return publicUser;
   }
 }

@@ -75,6 +75,8 @@ export default defineConfig({
     {
       command: 'node -r ts-node/register scripts/e2e-server.ts',
       cwd: '../backend',
+      // Functional tests share localhost; dedicated concurrency tests cover real default limits.
+      env: { API_RATE_LIMIT: '10000', AUTH_RATE_LIMIT: '1000' },
       url: 'http://localhost:4001/api/categories',
       reuseExistingServer: false,
       timeout: 120_000,

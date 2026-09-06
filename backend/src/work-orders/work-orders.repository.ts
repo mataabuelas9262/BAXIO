@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkOrderStatus } from '@prisma/client';
 
@@ -99,14 +99,16 @@ export class WorkOrdersRepository {
     });
   }
 
-  async updateStatus(id: string, status: WorkOrderStatus) {
-    return this.prisma.workOrder.update({
-      where: { id },
+  async updateStatus(id: string, status: WorkOrderStatus, expectedStatus: WorkOrderStatus) {
+    const changed = await this.prisma.workOrder.updateMany({
+      where: { id, status: expectedStatus },
       data: {
         status,
         ...(status === 'COMPLETION_PENDING' && { completionRequestedAt: new Date() }),
         ...(status === 'COMPLETED' && { completedDate: new Date() }),
       },
     });
+    if (changed.count !== 1) throw new ConflictException('La orden cambió mientras la actualizabas. Recarga para ver su estado.');
+    return this.findById(id);
   }
 }

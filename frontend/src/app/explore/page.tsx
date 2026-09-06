@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useNotice } from '@/components/ui/NoticeProvider';
 import { useSearchParams } from 'next/navigation';
 import { Search, Filter, Wrench, Briefcase, Users, MapPin, SlidersHorizontal } from 'lucide-react';
@@ -10,6 +11,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { ServiceCard } from '@/features/services/components/ServiceCard';
 import { JobRequestCard } from '@/features/job-requests/components/JobRequestCard';
 import { WorkerCard } from '@/features/workers/components/WorkerCard';
+import { CategoryIcon } from '@/features/categories/components/CategoryIcon';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -23,6 +25,12 @@ function ExploreContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
+  useEffect(() => {
+    setSearchQuery(initialQuery);
+    setSelectedCategory(initialCategory);
+    setActiveTab('services');
+  }, [initialQuery, initialCategory]);
+
   const [sortBy, setSortBy] = useState<'recent' | 'rating' | 'price_asc' | 'price_desc' | 'distance'>('recent');
 
   // Estados de Geolocalización y Proximidad
@@ -34,6 +42,7 @@ function ExploreContent() {
   const [services, setServices] = useState<Service[]>([]);
   const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
   const [workers, setWorkers] = useState<User[]>([]);
+  const debouncedQuery = useDebouncedValue(searchQuery.trim());
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -79,40 +88,47 @@ function ExploreContent() {
   };
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchData() {
       setIsLoading(true);
       try {
         if (activeTab === 'services') {
           const res = await servicesApi.getAll({
-            query: searchQuery || undefined,
+            query: debouncedQuery || undefined,
             categorySlug: selectedCategory || undefined,
             sortBy,
             userLat: isNearMeActive ? userCoords?.lat : undefined,
             userLng: isNearMeActive ? userCoords?.lng : undefined,
             maxRadiusKm: isNearMeActive ? maxRadiusKm : undefined,
           });
-          setServices(res);
+          if (!cancelled) setServices(res);
         } else if (activeTab === 'requests') {
           const res = await jobRequestsApi.getAll({
-            query: searchQuery || undefined,
+            query: debouncedQuery || undefined,
             categorySlug: selectedCategory || undefined,
             userLat: isNearMeActive ? userCoords?.lat : undefined,
             userLng: isNearMeActive ? userCoords?.lng : undefined,
             maxRadiusKm: isNearMeActive ? maxRadiusKm : undefined,
           });
-          setJobRequests(res);
+          if (!cancelled) setJobRequests(res);
         } else {
           const res = await usersApi.getWorkers({
-            query: searchQuery || undefined,
+            query: debouncedQuery || undefined,
           });
-          setWorkers(res);
+          if (!cancelled) setWorkers(res);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setServices([]); setJobRequests([]); setWorkers([]);
+          showNotice(error instanceof Error ? error.message : 'No se pudieron cargar los resultados.');
         }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
     fetchData();
-  }, [activeTab, selectedCategory, searchQuery, sortBy, isNearMeActive, userCoords, maxRadiusKm]);
+    return () => { cancelled = true; };
+  }, [activeTab, selectedCategory, debouncedQuery, sortBy, isNearMeActive, userCoords, maxRadiusKm]);
 
   return (
     <PageContainer>
@@ -261,12 +277,13 @@ function ExploreContent() {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.slug === selectedCategory ? '' : cat.slug)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
                 selectedCategory === cat.slug
                   ? 'bg-brand-600 text-white'
                   : 'bg-white text-slate-600 border border-slate-200 hover:border-brand-300'
               }`}
             >
+              <CategoryIcon category={cat} className="w-5 h-5" />
               {cat.name}
             </button>
           ))}

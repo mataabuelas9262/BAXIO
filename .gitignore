@@ -43,3 +43,9 @@ Thumbs.db
 playwright-report/
 test-results/
 *.tsbuildinfo
+
+/backend/.mail-preview/
+/backend/.mail-preview-e2e/
+
+/backend/.sms-preview/
+/backend/.sms-preview-e2e/

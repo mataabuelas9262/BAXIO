@@ -1,50 +1,11 @@
 import React from 'react';
 import Link from 'next/link';
-import {
-  Zap,
-  Wrench,
-  Wind,
-  Paintbrush,
-  Laptop,
-  Hammer,
-  KeyRound,
-  HardHat,
-  Umbrella,
-  Flame,
-  Trees,
-  Truck,
-  Refrigerator,
-  ShieldCheck,
-  Car,
-  CalendarDays,
-  Sparkles,
-  LucideIcon,
-} from 'lucide-react';
+import { CategoryIcon } from './CategoryIcon';
 import { Category } from '@/types/common.types';
 import { Card } from '@/components/ui/Card';
 import { useUserMode } from '@/features/mode/context/ModeContext';
 
-const iconMap: Record<string, LucideIcon> = {
-  Zap,
-  Wrench,
-  Wind,
-  Paintbrush,
-  Laptop,
-  Hammer,
-  KeyRound,
-  HardHat,
-  Umbrella,
-  Flame,
-  Trees,
-  Truck,
-  Refrigerator,
-  ShieldCheck,
-  Car,
-  CalendarDays,
-};
-
 export const CategoryCard: React.FC<{ category: Category }> = ({ category }) => {
-  const IconComponent = (category.iconName && iconMap[category.iconName]) || Sparkles;
   const { isWorking } = useUserMode();
 
   const accent = isWorking
@@ -63,7 +24,7 @@ export const CategoryCard: React.FC<{ category: Category }> = ({ category }) => 
     <Link href={`/explore?category=${category.slug}`} className="block group">
       <Card hoverEffect className={`p-4 flex flex-col items-center text-center ${accent.border} transition-all`}>
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 group-hover:text-white transition-all shadow-sm ${accent.icon}`}>
-          <IconComponent className="w-6 h-6" />
+          <CategoryIcon category={category} />
         </div>
         <h3 className={`text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 transition-colors line-clamp-1 ${accent.title}`}>
           {category.name}

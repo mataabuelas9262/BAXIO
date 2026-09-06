@@ -13,9 +13,26 @@ import {
   Review,
 } from '@/types/common.types';
 
+export interface AuthStep { step: 'email' | 'two-factor'; challengeToken: string; maskedEmail: string; expiresIn: number; resendAfter: number; delivery?: 'preview' | 'email'; }
+export type AuthResult = { user: User; token: string } | AuthStep;
 // AUTH ENDPOINTS
 export const authApi = {
-  login: async (credentials: { email: string; password: string }): Promise<{ user: User; token: string }> => {
+  requestPhone: async (phone: string, password: string, secondFactor: string): Promise<{ challengeToken: string }> => apiClient.post('/auth/phone/request', { phone, password, secondFactor }),
+  verifyPhone: async (challengeToken: string, code: string): Promise<{ message: string }> => apiClient.post('/auth/phone/verify', { challengeToken, code }),
+  passwordOptions: async (): Promise<{ smsAvailable: boolean }> => apiClient.get('/auth/password/options'),
+  requestPassword: async (email: string, channel: 'email' | 'sms'): Promise<{ challengeToken: string; resendAfter: number; message: string }> => apiClient.post('/auth/password/request', { email, channel }),
+  verifyPassword: async (challengeToken: string, code: string): Promise<{ resetToken: string; requiresTwoFactor: boolean }> => apiClient.post('/auth/password/verify', { challengeToken, code }),
+  resetPassword: async (resetToken: string, newPassword: string, secondFactor: string): Promise<{ message: string }> => apiClient.post('/auth/password/reset', { resetToken, newPassword, secondFactor }),
+  changePassword: async (currentPassword: string, newPassword: string): Promise<{ message: string }> => apiClient.post('/auth/password/change', { currentPassword, newPassword }),
+
+  verify: async (challengeToken: string, code: string): Promise<AuthResult> => apiClient.post('/auth/verify', { challengeToken, code }),
+  resend: async (challengeToken: string): Promise<AuthStep> => apiClient.post('/auth/resend', { challengeToken }),
+  security: async (): Promise<{ emailVerified: boolean; verifiedPhone: string | null; twoFactorEnabled: boolean; recoveryCodesRemaining: number }> => apiClient.get('/auth/security'),
+  verifyEmail: async (): Promise<AuthStep> => apiClient.post('/auth/email-verification'),
+  setup2fa: async (password: string): Promise<{ secret: string; qrCode: string; expiresIn: number }> => apiClient.post('/auth/2fa/setup', { password }),
+  confirm2fa: async (password: string, code: string): Promise<{ recoveryCodes: string[] }> => apiClient.post('/auth/2fa/confirm', { password, code }),
+  disable2fa: async (password: string, code: string): Promise<{ message: string }> => apiClient.post('/auth/2fa/disable', { password, code }),
+  login: async (credentials: { email: string; password: string }): Promise<AuthResult> => {
     return apiClient.post('/auth/login', credentials);
   },
   register: async (data: {
@@ -24,7 +41,7 @@ export const authApi = {
     fullName: string;
     phone?: string;
     location?: string;
-  }): Promise<{ user: User; token: string }> => {
+  }): Promise<AuthResult> => {
     return apiClient.post('/auth/register', data);
   },
   logout: async (): Promise<{ message: string }> => {
