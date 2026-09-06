@@ -1,17 +1,9 @@
 services:
-  db:
-    env_file: ./deployment/vm.env
-
-  migrate:
-    env_file: ./deployment/vm.env
-
   api:
-    env_file: ./deployment/vm.env
     environment:
       NODE_ENV: development
 
   caddy:
-    env_file: ./deployment/vm.env
     ports:
       - "8080:80"
     volumes:

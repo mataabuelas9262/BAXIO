@@ -2,7 +2,7 @@ services:
   db:
     image: mysql:8.4
     restart: unless-stopped
-    env_file: ./deployment/production.env
+    env_file: ${BAXIO_ENV_FILE:-./deployment/production.env}
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -21,7 +21,7 @@ services:
   migrate:
     build: ./backend
     profiles: ["tools"]
-    env_file: ./deployment/production.env
+    env_file: ${BAXIO_ENV_FILE:-./deployment/production.env}
     command: ["npx", "prisma", "db", "push", "--skip-generate"]
     depends_on:
       db:
@@ -31,7 +31,7 @@ services:
   api:
     build: ./backend
     restart: unless-stopped
-    env_file: ./deployment/production.env
+    env_file: ${BAXIO_ENV_FILE:-./deployment/production.env}
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -63,7 +63,7 @@ services:
   caddy:
     image: caddy:2.8-alpine
     restart: unless-stopped
-    env_file: ./deployment/production.env
+    env_file: ${BAXIO_ENV_FILE:-./deployment/production.env}
     ports:
       - "80:80"
       - "443:443"
