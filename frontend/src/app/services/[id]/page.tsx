@@ -79,6 +79,11 @@ export default function ServiceDetailPage() {
   }
 
   const isOwnService = user?.id === service.user.id;
+  const contactLabel = service.pricingType === 'FIXED'
+    ? 'Contactar al profesional'
+    : service.pricingType === 'HOURLY'
+      ? 'Consultar disponibilidad'
+      : 'Solicitar cotización';
   const handleDelete = async () => {
     setIsDeleting(true);
     try { await servicesApi.delete(service.id); window.location.href = ROUTES.EXPLORE; }
@@ -289,7 +294,7 @@ export default function ServiceDetailPage() {
               </div>
             ) : (
               <Button variant="quote" size="lg" className="w-full font-bold" leftIcon={<MessageSquare className="w-5 h-5" />} onClick={() => setIsContactModalOpen(true)}>
-                Solicitar cotización
+                {contactLabel}
               </Button>
             )}
           </Card>
@@ -351,6 +356,8 @@ export default function ServiceDetailPage() {
           onClose={() => setIsContactModalOpen(false)}
           user={service.user}
           contextTitle={service.title}
+          pricingType={service.pricingType}
+          priceLabel={formatPrice()}
         />
       )}
       <ConfirmModal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} title="¿Eliminar este servicio?" description="Se retirará del marketplace y esta acción no se puede deshacer." confirmLabel="Sí, eliminar servicio" variant="danger" isConfirming={isDeleting} />

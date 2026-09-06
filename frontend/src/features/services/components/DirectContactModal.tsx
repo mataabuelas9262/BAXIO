@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { ROUTES } from '@/constants/routes';
+import { ServicePricingType } from '@/types/common.types';
 
 interface DirectContactModalProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ interface DirectContactModalProps {
     location?: string | null;
   };
   contextTitle?: string;
+  pricingType?: ServicePricingType;
+  priceLabel?: string;
 }
 
 export function DirectContactModal({
@@ -25,12 +28,16 @@ export function DirectContactModal({
   onClose,
   user,
   contextTitle,
+  pricingType,
+  priceLabel,
 }: DirectContactModalProps) {
+  const isFixedPrice = pricingType === 'FIXED';
+  const isQuoteRequired = pricingType === 'STARTING_AT' || pricingType === 'CUSTOM_QUOTE';
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Solicitar cotización a ${user.fullName}`}
+      title={`${isQuoteRequired ? 'Solicitar cotización' : 'Contactar'} a ${user.fullName}`}
       description="Mantén la contratación y el seguimiento dentro de BAXIO"
     >
       <div className="space-y-5 pt-2">
@@ -54,8 +61,12 @@ export function DirectContactModal({
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-700 flex items-start gap-3">
           <Info className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            {contextTitle ? `Escríbele directamente a ${user.fullName} para explicarle lo que necesitas.` : 'Escríbele directamente para explicar lo que necesitas.'}
-            {' '}La conversación queda dentro de BAXIO y pueden formalizar una orden de trabajo cuando acuerden los detalles.
+            {isFixedPrice && priceLabel
+              ? `El precio publicado es ${priceLabel}. Solo cambia si ambos acuerdan un alcance distinto antes de formalizar el trabajo.`
+              : contextTitle
+                ? `Escríbele directamente a ${user.fullName} para explicarle lo que necesitas y confirmar los detalles.`
+                : 'Escríbele directamente para explicar lo que necesitas y confirmar los detalles.'}
+            {' '}La conversación queda dentro de BAXIO.
           </p>
         </div>
 
