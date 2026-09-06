@@ -29,6 +29,7 @@ import { DirectContactModal } from '@/features/services/components/DirectContact
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ROUTES } from '@/constants/routes';
+import { CategoryImagePlaceholder } from '@/features/categories/components/CategoryImagePlaceholder';
 
 export default function ServiceDetailPage() {
   const params = useParams();
@@ -84,18 +85,8 @@ export default function ServiceDetailPage() {
     finally { setIsDeleting(false); setShowDeleteConfirm(false); }
   };
 
-  const images =
-    service.images && service.images.length > 0
-      ? service.images
-      : [
-          {
-            id: 'default',
-            isIllustrative: true,
-            imageUrl:
-              'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1000&auto=format&fit=crop&q=80',
-            order: 0,
-          },
-        ];
+  const images = service.images ?? [];
+  const hasServiceImages = images.length > 0;
 
   const formatPrice = () => {
     if (!service.price) return 'Cotización personalizada';
@@ -138,7 +129,9 @@ export default function ServiceDetailPage() {
           {/* Main Gallery */}
           <Card className="p-0 overflow-hidden border-slate-200">
             <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden">
-              {failedImageIndexes.includes(activeImageIndex) ? (
+              {!hasServiceImages ? (
+                <CategoryImagePlaceholder category={service.category} />
+              ) : failedImageIndexes.includes(activeImageIndex) ? (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                   <ImageOff className="h-7 w-7" />
                   <span className="text-sm font-medium">Imagen no disponible</span>
@@ -151,7 +144,7 @@ export default function ServiceDetailPage() {
                   onError={() => setFailedImageIndexes((indexes) => Array.from(new Set([...indexes, activeImageIndex])))}
                 />
               )}
-              {images[activeImageIndex].isIllustrative && <span className="absolute bottom-3 left-3 rounded bg-slate-900/90 px-3 py-1 text-xs text-white">Imagen ilustrativa</span>}
+              {hasServiceImages && images[activeImageIndex].isIllustrative && <span className="absolute bottom-3 left-3 rounded bg-slate-900/90 px-3 py-1 text-xs text-white">Imagen ilustrativa</span>}
               <div className="absolute top-4 left-4">
                 <Badge variant="brand" size="md" className="shadow-md bg-white/95 font-bold">
                   {service.category.name}
@@ -159,7 +152,7 @@ export default function ServiceDetailPage() {
               </div>
             </div>
 
-            {images.length > 1 && (
+            {hasServiceImages && images.length > 1 && (
               <div className="p-3 bg-slate-50 flex gap-2 overflow-x-auto border-t border-slate-100">
                 {images.map((img, idx) => (
                   <button

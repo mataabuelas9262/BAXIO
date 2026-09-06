@@ -7,13 +7,11 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Rating } from '@/components/ui/Rating';
 import { ROUTES } from '@/constants/routes';
+import { CategoryImagePlaceholder } from '@/features/categories/components/CategoryImagePlaceholder';
 
 export const ServiceCard: React.FC<{ service: Service }> = ({ service }) => {
   const [hasImageError, setHasImageError] = useState(false);
-  const coverImage =
-    service.images && service.images.length > 0
-      ? service.images[0].imageUrl
-      : 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80';
+  const coverImage = service.images?.[0]?.imageUrl;
 
   const formatPrice = () => {
     if (!service.price) return 'Cotización';
@@ -41,7 +39,9 @@ export const ServiceCard: React.FC<{ service: Service }> = ({ service }) => {
       <Card hoverEffect className="p-0 overflow-hidden flex flex-col h-full border-slate-200/80">
         {/* Cover Image */}
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
-          {hasImageError ? (
+          {!coverImage ? (
+            <CategoryImagePlaceholder category={service.category} compact />
+          ) : hasImageError ? (
             <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-slate-100 px-3 text-center text-slate-500 dark:bg-slate-800 dark:text-slate-400">
               <ImageOff className="h-5 w-5" />
               <span className="text-xs font-medium">Imagen no disponible</span>
