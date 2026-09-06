@@ -1,0 +1,12 @@
+services:
+  api:
+    environment:
+      NODE_ENV: development
+
+  caddy:
+    ports:
+      - "8080:80"
+    volumes:
+      - ./deployment/Caddyfile.vm:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config

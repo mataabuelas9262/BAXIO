@@ -13,3 +13,7 @@ Este archivo prepara una sola máquina Linux con Docker. No ejecuta `seed`: la b
 La base, las fotos y los respaldos están en volúmenes Docker. Antes de actualizar, ejecuta un respaldo. Para actualizar: `git pull`, repite migración y usa `up -d --build`.
 
 No expongas MySQL, la API ni los volúmenes como puertos públicos. Solo Caddy publica 80/443. Las alertas de salud requieren elegir un monitor externo al desplegar; este repositorio no envía información a terceros por defecto.
+
+## Prueba en una VM sin dominio
+
+Usa `deployment/vm.env.example` y `docker-compose.vm.yml` solo para una prueba privada. Caddy queda en el puerto 8080 sin HTTPS. Si la VM usa NAT de VirtualBox, configura una regla de reenvío: host `8080` hacia invitado `8080`, ambos TCP. Entonces BAXIO abre en `http://localhost:8080` desde Windows. No abras esa regla al router ni uses esta configuración para usuarios reales.

@@ -27,12 +27,13 @@ async function bootstrap() {
   });
 
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const frontendOrigins = frontendUrl.split(',').map(origin => origin.trim()).filter(Boolean);
 
   // Habilitar CORS con soporte de cookies y credenciales
   app.enableCors({
     origin: process.env.NODE_ENV === 'production'
-      ? frontendUrl.split(',').map(origin => origin.trim())
-      : [frontendUrl, 'http://localhost:3000', 'http://127.0.0.1:3000'],
+      ? frontendOrigins
+      : [...frontendOrigins, 'http://localhost:3000', 'http://127.0.0.1:3000'],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization',

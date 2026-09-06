@@ -52,3 +52,4 @@ test-results/
 /backend/backups/
 /backups/
 /deployment/production.env
+/deployment/vm.env
