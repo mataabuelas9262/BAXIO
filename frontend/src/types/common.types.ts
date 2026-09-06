@@ -28,6 +28,7 @@ export interface Credential {
   rejectionReason?: string | null;
   verifiedAt?: string | null;
   createdAt: string;
+  lastSeenAt?: string | null;
 }
 
 export interface Experience {

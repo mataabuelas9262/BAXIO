@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Ban, Copy, Flag, MessageCircle, Pencil, RefreshCw, Send, Trash2 } from 'lucide-react';
+import { Ban, Check, CheckCheck, Copy, Flag, MessageCircle, Pencil, Send, Trash2 } from 'lucide-react';
+import { io, Socket } from 'socket.io-client';
 import { messagesApi } from '@/services/api/endpoints';
 import { Conversation, WorkOrder } from '@/types/common.types';
 import { Avatar } from '@/components/ui/Avatar';
@@ -14,7 +15,7 @@ interface OrderChatModalProps {
   isOpen: boolean;
   onClose: () => void;
   order?: WorkOrder | null;
-  directUser?: { id: string; fullName: string; avatarUrl?: string | null; location?: string | null } | null;
+  directUser?: { id: string; fullName: string; avatarUrl?: string | null; location?: string | null; lastSeenAt?: string | null } | null;
   currentUserId?: string;
 }
 
@@ -29,7 +30,11 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
   const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'block'; id?: string } | null>(null);
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
   const [reportNotice, setReportNotice] = useState('');
+  const [counterpartOnline, setCounterpartOnline] = useState(false);
+  const [counterpartTyping, setCounterpartTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const counterpart = directUser || (order && currentUserId === order.clientId ? order.worker : order?.client);
   const conversationKey = order?.id || directUser?.id;
@@ -63,8 +68,32 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversation?.messages.length, isOpen]);
 
-  const handleSend = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const appendMessage = useCallback((message: Conversation['messages'][number]) => {
+    setConversation((current) => current && current.messages.some((entry) => entry.id === message.id)
+      ? current
+      : current ? { ...current, messages: [...current.messages, message] } : current);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || !counterpart?.id) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+    const socketBase = apiUrl.startsWith('/') ? window.location.origin : new URL(apiUrl).origin;
+    const socket = io(`${socketBase}/chat`, { path: '/socket.io', withCredentials: true, transports: ['websocket', 'polling'] });
+    socketRef.current = socket;
+    socket.on('connect', () => socket.emit('chat:watch', { userId: counterpart.id }));
+    socket.on('chat:presence', (event: { userId: string; online: boolean }) => {
+      if (event.userId === counterpart.id) setCounterpartOnline(event.online);
+    });
+    socket.on('chat:typing', (event: { userId: string; isTyping: boolean }) => {
+      if (event.userId === counterpart.id) setCounterpartTyping(event.isTyping);
+    });
+    socket.on('chat:message', (event: { kind: 'direct' | 'work-order'; counterpartId?: string; workOrderId?: string; message: Conversation['messages'][number] }) => {
+      if ((directUser && event.kind === 'direct' && event.counterpartId === directUser.id) || (order && event.kind === 'work-order' && event.workOrderId === order.id)) appendMessage(event.message);
+    });
+    return () => { socket.disconnect(); socketRef.current = null; };
+  }, [isOpen, counterpart?.id, directUser?.id, order?.id, appendMessage]);
+
+  const sendMessage = async () => {
     const content = draft.trim();
     if ((!order && !directUser) || !content) return;
 
@@ -72,16 +101,26 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
     setError('');
     try {
       const message = order ? await messagesApi.send(order.id, content) : await messagesApi.sendDirect(directUser!.id, content);
-      setConversation((current) => current
-        ? { ...current, messages: [...current.messages, message] }
-        : current);
+      appendMessage(message);
       setDraft('');
+      socketRef.current?.emit('chat:typing', { counterpartId: counterpart?.id, isTyping: false });
     } catch (err: any) {
       setError(err.message || 'No fue posible enviar el mensaje');
     } finally {
       setIsSending(false);
     }
   };
+
+  const handleSend = (event: React.FormEvent) => { event.preventDefault(); void sendMessage(); };
+  const handleDraftChange = (value: string) => {
+    setDraft(value);
+    if (!counterpart?.id) return;
+    socketRef.current?.emit('chat:typing', { counterpartId: counterpart.id, isTyping: Boolean(value.trim()) });
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => socketRef.current?.emit('chat:typing', { counterpartId: counterpart.id, isTyping: false }), 1200);
+  };
+
+  const presenceLabel = counterpartTyping ? 'Escribiendo…' : counterpartOnline ? 'En línea' : directUser?.lastSeenAt ? `Última vez ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(directUser.lastSeenAt))}` : 'Desconectado';
 
   const updateMessage = async () => {
     if (!editingId || !editingContent.trim()) return;
@@ -122,9 +161,7 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
       <div className="space-y-4">
         <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-brand-50/60 p-3">
           <Avatar src={counterpart?.avatarUrl} name={counterpart?.fullName || 'Contacto'} size="sm" />
-          <p className="text-xs leading-relaxed text-brand-900">
-            {directUser ? 'Este chat es privado entre las dos personas. Formalicen una orden cuando acuerden los detalles.' : 'Este chat es privado entre las dos personas de esta orden de trabajo.'}
-          </p>
+          <div className="text-xs leading-relaxed text-brand-900"><p>{directUser ? 'Este chat es privado entre las dos personas. Formalicen una orden cuando acuerden los detalles.' : 'Este chat es privado entre las dos personas de esta orden de trabajo.'}</p><p className="mt-1 font-semibold text-brand-700" aria-live="polite">{presenceLabel}</p></div>
           <div className="ml-auto flex shrink-0 gap-1">
             <button type="button" disabled={!counterpart?.id} onClick={() => { if (counterpart) { setReportNotice(''); setReportTarget({ type: 'user', id: counterpart.id, name: counterpart.fullName }); } }} className="rounded-lg p-1.5 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-950/40" aria-label="Reportar usuario"><Flag className="h-4 w-4" /></button>
             <button type="button" onClick={() => setConfirmAction({ type: 'block' })} className="rounded-lg p-1.5 text-rose-700 hover:bg-rose-100" aria-label="Bloquear usuario"><Ban className="h-4 w-4" /></button>
@@ -151,9 +188,7 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
                     {editingId === message.id ? (
                       <div className="space-y-2"><textarea value={editingContent} onChange={(event) => setEditingContent(event.target.value)} className="w-full rounded-lg p-2 text-sm text-slate-900" rows={2} /><div className="flex gap-2"><button type="button" onClick={updateMessage} className="text-xs font-bold">Guardar</button><button type="button" onClick={() => setEditingId(null)} className="text-xs">Cancelar</button></div></div>
                     ) : <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>}
-                    <p className={`mt-1 text-[10px] ${isMine ? 'text-brand-100' : 'text-slate-400'}`}>
-                      {new Date(message.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                    <div className={`mt-1 flex items-center gap-1 text-[10px] ${isMine ? 'text-brand-100' : 'text-slate-400'}`}><span>{new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(new Date(message.createdAt))}</span>{isMine && (message.isRead ? <CheckCheck className="h-3.5 w-3.5 text-sky-100" aria-label="Leído" /> : <Check className="h-3.5 w-3.5" aria-label="Enviado" />)}</div>
                     <div className={`mt-1 flex gap-1 ${isMine ? 'text-brand-100' : 'text-slate-400'}`}>
                       <button type="button" onClick={() => copyMessage(message.content)} aria-label="Copiar mensaje"><Copy className="h-3.5 w-3.5" /></button>
                       {isMine ? <><button type="button" onClick={() => { setEditingId(message.id); setEditingContent(message.content); }} aria-label="Editar mensaje"><Pencil className="h-3.5 w-3.5" /></button><button type="button" onClick={() => setConfirmAction({ type: 'delete', id: message.id })} aria-label="Eliminar mensaje"><Trash2 className="h-3.5 w-3.5" /></button></> : <button type="button" onClick={() => { setReportNotice(''); setReportTarget({ type: 'message', id: message.id, name: message.sender.fullName, preview: message.content }); }} aria-label="Reportar mensaje"><Flag className="h-3.5 w-3.5" /></button>}
@@ -175,7 +210,8 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
         <form noValidate onSubmit={handleSend} className="flex items-end gap-2">
           <textarea
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => handleDraftChange(event.target.value)}
+            onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage(); } }}
             placeholder="Escribe un mensaje..."
             maxLength={2000}
             rows={2}
@@ -187,12 +223,6 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
           </Button>
         </form>
 
-        <div className="flex justify-end">
-          <button type="button" onClick={loadConversation} className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand-700">
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </button>
-        </div>
       </div>
       <ConfirmModal
         isOpen={!!confirmAction}

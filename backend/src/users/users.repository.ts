@@ -25,6 +25,7 @@ export class UsersRepository {
         clientRatingAvg: true,
         clientRatingCnt: true,
         createdAt: true,
+        lastSeenAt: true,
         credentials: {
           select: {
             id: true,

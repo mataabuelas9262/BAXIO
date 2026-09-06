@@ -1,10 +1,11 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { MessagesRepository } from './messages.repository';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ChatGateway } from './chat.gateway';
 
 @Injectable()
 export class MessagesService {
-  constructor(private readonly messagesRepository: MessagesRepository, private readonly notifications: NotificationsService) {}
+  constructor(private readonly messagesRepository: MessagesRepository, private readonly notifications: NotificationsService, private readonly chat: ChatGateway) {}
 
   private async getConversationIdForWorkOrder(workOrderId: string, userId: string) {
     const order = await this.messagesRepository.findWorkOrderForParticipant(workOrderId, userId);
@@ -52,6 +53,7 @@ export class MessagesService {
   async sendMessage(workOrderId: string, userId: string, content: string) {
     const { conversationId, participantIds } = await this.getConversationIdForWorkOrder(workOrderId, userId);
     const message = await this.messagesRepository.createMessage(conversationId, userId, content.trim());
+    this.chat.emitWorkOrderMessage(participantIds, workOrderId, message);
     const recipientId = participantIds.find((id) => id !== userId);
     if (recipientId) await this.notifications.create(recipientId, 'NEW_MESSAGE', 'Nuevo mensaje', `${message.sender.fullName} te escribió sobre un trabajo.`, { workOrderId, messageId: message.id });
     return message;
@@ -68,6 +70,7 @@ export class MessagesService {
     if (!normalizedContent) throw new BadRequestException('El mensaje no puede estar vacío');
     const { conversationId, counterpart } = await this.getDirectConversationId(counterpartId, userId);
     const message = await this.messagesRepository.createMessage(conversationId, userId, normalizedContent);
+    this.chat.emitDirectMessage(userId, counterpartId, message);
     await this.notifications.create(counterpartId, 'NEW_MESSAGE', 'Nueva solicitud directa', `${message.sender.fullName} quiere contratarte y te escribió.`, { directUserId: userId, messageId: message.id });
     return message;
   }
