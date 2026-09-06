@@ -22,7 +22,7 @@ services:
     build: ./backend
     profiles: ["tools"]
     env_file: ${BAXIO_ENV_FILE:-./deployment/production.env}
-    command: ["npx", "prisma", "db", "push", "--skip-generate"]
+    command: ["sh", "-c", "npx prisma db push --skip-generate && node scripts/seed-categories.cjs"]
     depends_on:
       db:
         condition: service_healthy

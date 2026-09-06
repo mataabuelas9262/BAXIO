@@ -26,6 +26,7 @@
     "admin:grant": "node scripts/grant-admin.cjs",
     "test:auth-security": "node -r ts-node/register --test tests/auth-security.test.ts",
     "migrate:password-recovery": "ts-node scripts/migrate-password-recovery.ts",
+    "seed:categories": "node scripts/seed-categories.cjs",
     "test:password": "node -r ts-node/register --test tests/password.test.ts",
     "check:secrets": "node scripts/check-secrets.cjs"
   },
