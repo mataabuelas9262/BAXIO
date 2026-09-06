@@ -15,6 +15,7 @@ import { CredentialsModule } from './credentials/credentials.module';
 import { ExperiencesModule } from './experiences/experiences.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { MessagesModule } from './messages/messages.module';
+import { AdminModule } from './admin/admin.module';
 
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -39,6 +40,7 @@ import { ResponseTransformInterceptor } from './common/interceptors/response-tra
     WorkOrdersModule,
     ReviewsModule,
     MessagesModule,
+    AdminModule,
   ],
   providers: [
     {

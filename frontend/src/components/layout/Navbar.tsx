@@ -16,6 +16,7 @@ import {
   Compass,
   Moon,
   Sun,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useUserMode } from '@/features/mode/context/ModeContext';
@@ -204,6 +205,9 @@ export const Navbar: React.FC = () => {
                         <ClipboardList className="w-4 h-4 text-slate-400" />
                         Mis Trabajos Contratados
                       </Link>
+                      {(user.role === 'ADMIN' || user.role === 'MODERATOR') && <Link href={ROUTES.ADMIN_REPORTS} onClick={() => setShowUserMenu(false)} className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:bg-slate-50 dark:focus-visible:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-400">
+                        <ShieldCheck className="w-4 h-4 text-slate-400" /> Moderar reportes
+                      </Link>}
                     </div>
                     <div className="pt-1 border-t border-slate-100">
                       <button

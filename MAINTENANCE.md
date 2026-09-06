@@ -62,9 +62,17 @@ El flujo `.github/workflows/ci.yml` prepara MySQL y ejecuta pruebas y compilacio
 - Se mantiene la CSP con nonce y sin `unsafe-inline`/`unsafe-eval` en producción. Antes de restringir imágenes, inventariar sus orígenes.
 - El arranque compilado del backend es `npm run start:prod` (usa `dist/src/main.js`).
 
+## Respaldos y moderación
+
+`npm run backup` crea una carpeta privada con `database.sql.gz`, una copia de `UPLOADS_DIR` y un manifiesto. Por defecto conserva 14 días en `backend/backups`; para producción define `BACKUP_DIR` como una ruta absoluta en otro disco o proveedor y programa la ejecución diaria. El respaldo no contiene `MFA_ENCRYPTION_KEY`, JWT ni contraseñas SMTP: guarda esas claves por separado en un gestor de contraseñas o bóveda. Haz una restauración de prueba antes de depender de él.
+
+Las cuentas `ADMIN` y `MODERATOR` tienen `/admin/reports` para revisar reportes y marcarlos como revisados o descartados. No borra contenido automáticamente ni asigna roles: esos cambios deben hacerse de manera deliberada desde la base de datos hasta tener gestión de usuarios con auditoría.
+
+Para asignar el primer administrador local: `npm run admin:grant -- correo@ejemplo.com`. Debe ser la cuenta real del dueño, no una cuenta demo, y después debe volver a iniciar sesión.
+
 ## Decisiones pendientes
 
-Los pagos siguen pospuestos: requieren definición de proveedor, comisión, reembolsos y disputas. La recuperación por correo aún no está implementada; sus pruebas se añadirán cuando exista ese flujo y un proveedor de correo. No se ha contratado alojamiento ni desplegado el proyecto.
+Los pagos siguen pospuestos: requieren definición de proveedor, comisión, reembolsos y disputas. No se ha contratado alojamiento ni desplegado el proyecto.
 
 ## Consultas simultáneas y límites
 

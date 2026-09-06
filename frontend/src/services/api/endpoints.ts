@@ -316,3 +316,9 @@ export const reviewsApi = {
     return apiClient.get(`/reviews/work-order/${workOrderId}`);
   },
 };
+
+export type AdminReport = { id: string; reason: string; details?: string | null; status: 'PENDING' | 'REVIEWED' | 'DISMISSED'; createdAt: string; reporter: { id: string; fullName: string; email: string }; reportedUser: { id: string; fullName: string; email: string }; message?: { id: string; content: string; createdAt: string; sender: { id: string; fullName: string } } | null };
+export const adminApi = {
+  listReports: async (status?: AdminReport['status']): Promise<AdminReport[]> => apiClient.get('/admin/reports', { params: status ? { status } : undefined }),
+  updateReport: async (id: string, status: AdminReport['status']): Promise<AdminReport> => apiClient.patch(`/admin/reports/${id}`, { status }),
+};
