@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Ban, Check, CheckCheck, Copy, Flag, MessageCircle, Pencil, Send, Trash2 } from 'lucide-react';
+import { Ban, Camera, Check, CheckCheck, Copy, FileUp, Flag, Image, MessageCircle, MoreHorizontal, Paperclip, Pencil, Send, Trash2 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
-import { messagesApi } from '@/services/api/endpoints';
+import { messagesApi, uploadsApi } from '@/services/api/endpoints';
 import { Conversation, WorkOrder } from '@/types/common.types';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -32,6 +32,7 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
   const [reportNotice, setReportNotice] = useState('');
   const [counterpartOnline, setCounterpartOnline] = useState(false);
   const [counterpartTyping, setCounterpartTyping] = useState(false);
+  const [attachment, setAttachment] = useState<{ url: string; filename: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -94,7 +95,7 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
   }, [isOpen, counterpart?.id, directUser?.id, order?.id, appendMessage]);
 
   const sendMessage = async () => {
-    const content = draft.trim();
+    const content = draft.trim() || (attachment ? `📎 ${attachment.filename}\n${attachment.url}` : '');
     if ((!order && !directUser) || !content) return;
 
     setIsSending(true);
@@ -103,12 +104,23 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
       const message = order ? await messagesApi.send(order.id, content) : await messagesApi.sendDirect(directUser!.id, content);
       appendMessage(message);
       setDraft('');
+      setAttachment(null);
       socketRef.current?.emit('chat:typing', { counterpartId: counterpart?.id, isTyping: false });
     } catch (err: any) {
       setError(err.message || 'No fue posible enviar el mensaje');
     } finally {
       setIsSending(false);
     }
+  };
+
+  const attachFile = async (file?: File, imageOnly = false) => {
+    if (!file) return;
+    setIsSending(true); setError('');
+    try {
+      const result = imageOnly ? await uploadsApi.uploadImage(file) : await uploadsApi.uploadEvidence(file);
+      setAttachment({ url: result.url, filename: file.name });
+    } catch (err: any) { setError(err.message || 'No fue posible adjuntar el archivo'); }
+    finally { setIsSending(false); }
   };
 
   const handleSend = (event: React.FormEvent) => { event.preventDefault(); void sendMessage(); };
@@ -182,17 +194,14 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
             conversation.messages.map((message) => {
               const isMine = message.senderId === currentUserId;
               return (
-                <div key={message.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl px-3 py-2 ${isMine ? 'bg-brand-600 text-white rounded-br-md' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'}`}>
+                <div key={message.id} className={`group flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`relative max-w-[85%] rounded-2xl px-3 py-2 ${isMine ? 'bg-gradient-to-br from-sky-500 to-brand-700 text-white shadow-lg shadow-brand-950/30 rounded-br-md' : 'bg-slate-800 text-slate-100 border border-slate-700 rounded-bl-md'}`}>
                     {!isMine && <p className="mb-0.5 text-[10px] font-bold text-brand-700">{message.sender.fullName}</p>}
                     {editingId === message.id ? (
                       <div className="space-y-2"><textarea value={editingContent} onChange={(event) => setEditingContent(event.target.value)} className="w-full rounded-lg p-2 text-sm text-slate-900" rows={2} /><div className="flex gap-2"><button type="button" onClick={updateMessage} className="text-xs font-bold">Guardar</button><button type="button" onClick={() => setEditingId(null)} className="text-xs">Cancelar</button></div></div>
                     ) : <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>}
                     <div className={`mt-1 flex items-center gap-1 text-[10px] ${isMine ? 'text-brand-100' : 'text-slate-400'}`}><span>{new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(new Date(message.createdAt))}</span>{isMine && (message.isRead ? <CheckCheck className="h-3.5 w-3.5 text-sky-100" aria-label="Leído" /> : <Check className="h-3.5 w-3.5" aria-label="Enviado" />)}</div>
-                    <div className={`mt-1 flex gap-1 ${isMine ? 'text-brand-100' : 'text-slate-400'}`}>
-                      <button type="button" onClick={() => copyMessage(message.content)} aria-label="Copiar mensaje"><Copy className="h-3.5 w-3.5" /></button>
-                      {isMine ? <><button type="button" onClick={() => { setEditingId(message.id); setEditingContent(message.content); }} aria-label="Editar mensaje"><Pencil className="h-3.5 w-3.5" /></button><button type="button" onClick={() => setConfirmAction({ type: 'delete', id: message.id })} aria-label="Eliminar mensaje"><Trash2 className="h-3.5 w-3.5" /></button></> : <button type="button" onClick={() => { setReportNotice(''); setReportTarget({ type: 'message', id: message.id, name: message.sender.fullName, preview: message.content }); }} aria-label="Reportar mensaje"><Flag className="h-3.5 w-3.5" /></button>}
-                    </div>
+                    <details className="absolute -top-2 right-1"><summary className="cursor-pointer list-none rounded-full bg-slate-950/50 p-1 text-white opacity-0 transition group-hover:opacity-100"><MoreHorizontal className="h-4 w-4" /></summary><div className="absolute right-0 z-10 mt-1 flex gap-1 rounded-lg bg-slate-950 p-1 text-white shadow-xl"><button type="button" onClick={() => copyMessage(message.content)}><Copy className="h-3.5 w-3.5" /></button>{isMine ? <><button type="button" onClick={() => { setEditingId(message.id); setEditingContent(message.content); }}><Pencil className="h-3.5 w-3.5" /></button><button type="button" onClick={() => setConfirmAction({ type: 'delete', id: message.id })}><Trash2 className="h-3.5 w-3.5" /></button></> : <button type="button" onClick={() => { setReportNotice(''); setReportTarget({ type: 'message', id: message.id, name: message.sender.fullName, preview: message.content }); }}><Flag className="h-3.5 w-3.5" /></button>}</div></details>
                   </div>
                 </div>
               );
@@ -207,7 +216,8 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
           <div ref={messagesEndRef} />
         </div>
 
-        <form noValidate onSubmit={handleSend} className="flex items-end gap-2">
+        <form noValidate onSubmit={handleSend} className="rounded-2xl border border-brand-400/30 bg-slate-900/80 p-2 shadow-lg shadow-brand-950/30"><div className="flex items-end gap-2">
+          <div className="flex gap-1 pb-1 text-brand-200"><label className="cursor-pointer rounded-lg p-2 hover:bg-brand-500/20"><Paperclip className="h-4 w-4"/><input hidden type="file" accept="image/*,.pdf" onChange={(e) => void attachFile(e.target.files?.[0])}/></label><label className="cursor-pointer rounded-lg p-2 hover:bg-brand-500/20"><Image className="h-4 w-4"/><input hidden type="file" accept="image/*" onChange={(e) => void attachFile(e.target.files?.[0], true)}/></label><label className="cursor-pointer rounded-lg p-2 hover:bg-brand-500/20"><Camera className="h-4 w-4"/><input hidden type="file" accept="image/*" capture="environment" onChange={(e) => void attachFile(e.target.files?.[0], true)}/></label></div>
           <textarea
             value={draft}
             onChange={(event) => handleDraftChange(event.target.value)}
@@ -218,10 +228,10 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
             disabled={isSending}
             className="min-h-[44px] flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-slate-100"
           />
-          <Button type="submit" variant="primary" isLoading={isSending} disabled={!draft.trim()} leftIcon={<Send className="h-4 w-4" />}>
+          <Button type="submit" variant="primary" isLoading={isSending} disabled={!draft.trim() && !attachment} leftIcon={<Send className="h-4 w-4" />}>
             Enviar
           </Button>
-        </form>
+        </div></form>
 
       </div>
       <ConfirmModal
