@@ -6,10 +6,11 @@ import {
 } from '@nestjs/common';
 import { WorkOrdersRepository } from './work-orders.repository';
 import { WorkOrderStatus } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class WorkOrdersService {
-  constructor(private readonly workOrdersRepo: WorkOrdersRepository) {}
+  constructor(private readonly workOrdersRepo: WorkOrdersRepository, private readonly notifications?: NotificationsService) {}
 
   async getMyWorkOrders(userId: string) {
     return this.workOrdersRepo.findMyWorkOrders(userId);
@@ -38,14 +39,21 @@ export class WorkOrdersService {
 
     // Regla de negocio: El trabajador solicita finalización (COMPLETION_PENDING)
     if (isWorker && status === 'COMPLETED') {
-      return this.workOrdersRepo.updateStatus(workOrder.id, 'COMPLETION_PENDING', workOrder.status);
+      const updated = await this.workOrdersRepo.updateStatus(workOrder.id, 'COMPLETION_PENDING', workOrder.status);
+      await this.notifications?.create(workOrder.clientId, 'WORK_ORDER_COMPLETED', 'Finalización solicitada', 'El profesional marcó el trabajo como terminado. Confirma si todo quedó bien.', { workOrderId: id });
+      return updated;
     }
 
     // El cliente puede confirmar finalización directamente a COMPLETED
     if (isClient && (status === 'COMPLETED' || status === 'COMPLETION_PENDING')) {
-      return this.workOrdersRepo.updateStatus(workOrder.id, 'COMPLETED', workOrder.status);
+      const updated = await this.workOrdersRepo.updateStatus(workOrder.id, 'COMPLETED', workOrder.status);
+      await this.notifications?.create(workOrder.workerId, 'WORK_ORDER_COMPLETED', 'Trabajo confirmado', 'El cliente confirmó que el trabajo fue finalizado.', { workOrderId: id });
+      return updated;
     }
 
-    return this.workOrdersRepo.updateStatus(workOrder.id, status, workOrder.status);
+    const updated = await this.workOrdersRepo.updateStatus(workOrder.id, status, workOrder.status);
+    const recipientId = isClient ? workOrder.workerId : workOrder.clientId;
+    await this.notifications?.create(recipientId, 'WORK_ORDER_COMPLETED', 'Estado del trabajo actualizado', `El estado del trabajo cambió a ${status}.`, { workOrderId: id });
+    return updated;
   }
 }

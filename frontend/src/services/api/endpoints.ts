@@ -322,3 +322,10 @@ export const adminApi = {
   listReports: async (status?: AdminReport['status']): Promise<AdminReport[]> => apiClient.get('/admin/reports', { params: status ? { status } : undefined }),
   updateReport: async (id: string, status: AdminReport['status']): Promise<AdminReport> => apiClient.patch(`/admin/reports/${id}`, { status }),
 };
+
+export type AppNotification = { id: string; type: 'NEW_PROPOSAL' | 'PROPOSAL_ACCEPTED' | 'PROPOSAL_REJECTED' | 'WORK_ORDER_COMPLETED' | 'NEW_REVIEW' | 'NEW_MESSAGE'; title: string; message: string; data?: Record<string, string> | null; isRead: boolean; createdAt: string };
+export const notificationsApi = {
+  list: async (): Promise<{ items: AppNotification[]; unread: number }> => apiClient.get('/notifications'),
+  markRead: async (id: string): Promise<{ message: string }> => apiClient.patch(`/notifications/${id}/read`),
+  markAllRead: async (): Promise<{ message: string }> => apiClient.patch('/notifications/read-all'),
+};

@@ -17,6 +17,8 @@ import {
   Moon,
   Sun,
   ShieldCheck,
+  Bell,
+  CheckCheck,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useUserMode } from '@/features/mode/context/ModeContext';
@@ -24,6 +26,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { ModeSwitcher } from '@/components/layout/ModeSwitcher';
 import { ROUTES } from '@/constants/routes';
+import { AppNotification, notificationsApi } from '@/services/api/endpoints';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -33,6 +36,9 @@ export const Navbar: React.FC = () => {
   const [showExploreMenu, setShowExploreMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDark, setIsDark] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -42,6 +48,25 @@ export const Navbar: React.FC = () => {
     setIsDark(dark);
     document.documentElement.classList.toggle('dark', dark);
   }, []);
+
+  const loadNotifications = async () => {
+    if (!user) return;
+    try { const result = await notificationsApi.list(); setNotifications(result.items); setUnreadCount(result.unread); } catch { /* A notification failure never blocks navigation. */ }
+  };
+
+  useEffect(() => {
+    if (!user) { setNotifications([]); setUnreadCount(0); return; }
+    void loadNotifications();
+    const timer = window.setInterval(() => void loadNotifications(), 30_000);
+    return () => window.clearInterval(timer);
+  }, [user?.id]);
+
+  const openNotification = async (item: AppNotification) => {
+    if (!item.isRead) { await notificationsApi.markRead(item.id).catch(() => undefined); setNotifications(current => current.map(entry => entry.id === item.id ? { ...entry, isRead: true } : entry)); setUnreadCount(current => Math.max(0, current - 1)); }
+    setShowNotifications(false);
+    const workOrderId = item.data?.workOrderId;
+    router.push(workOrderId ? `${ROUTES.MY_ORDERS}?workOrder=${encodeURIComponent(workOrderId)}` : ROUTES.MY_ORDERS);
+  };
 
   const toggleTheme = () => {
     const nextTheme = !isDark;
@@ -113,6 +138,12 @@ export const Navbar: React.FC = () => {
           <button type="button" onClick={toggleTheme} aria-label={isDark ? 'Activar modo claro' : 'Activar modo oscuro'} title={isDark ? 'Modo claro' : 'Modo oscuro'} className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-100 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-300 dark:hover:bg-slate-700 dark:hover:text-amber-200">
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
+          {isAuthenticated && user && <div className="relative">
+            <button type="button" aria-label={`Notificaciones${unreadCount ? `, ${unreadCount} sin leer` : ''}`} onClick={() => { setShowNotifications(value => !value); if (!showNotifications) void loadNotifications(); }} className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-100 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+              <Bell className="w-4 h-4" />{unreadCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-4 text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+            </button>
+            {showNotifications && <><div className="fixed inset-0 z-10" onClick={() => setShowNotifications(false)} /><section aria-label="Notificaciones" className="absolute right-0 z-20 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"><div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-700"><h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Notificaciones</h2><button onClick={async () => { await notificationsApi.markAllRead().catch(() => undefined); setNotifications(current => current.map(item => ({ ...item, isRead: true }))); setUnreadCount(0); }} disabled={!unreadCount} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 disabled:opacity-40"><CheckCheck className="w-3.5 h-3.5" /> Leer todas</button></div><div className="max-h-96 overflow-y-auto">{notifications.length === 0 ? <p className="p-5 text-center text-sm text-slate-500">Aún no tienes notificaciones.</p> : notifications.map(item => <button key={item.id} onClick={() => void openNotification(item)} className={`block w-full border-b border-slate-100 px-4 py-3 text-left last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 ${item.isRead ? '' : 'bg-brand-50/60 dark:bg-brand-950/20'}`}><span className="block text-xs font-bold text-slate-900 dark:text-slate-100">{item.title}</span><span className="mt-1 block text-xs leading-relaxed text-slate-500">{item.message}</span><span className="mt-1 block text-[10px] text-slate-400">{new Date(item.createdAt).toLocaleString('es-MX')}</span></button>)}</div></section></>}
+          </div>}
           {/* Publish Dropdown */}
           <div className="relative">
             <Button

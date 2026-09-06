@@ -1,9 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { MessagesRepository } from './messages.repository';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class MessagesService {
-  constructor(private readonly messagesRepository: MessagesRepository) {}
+  constructor(private readonly messagesRepository: MessagesRepository, private readonly notifications: NotificationsService) {}
 
   private async getConversationIdForWorkOrder(workOrderId: string, userId: string) {
     const order = await this.messagesRepository.findWorkOrderForParticipant(workOrderId, userId);
@@ -23,18 +24,21 @@ export class MessagesService {
     const existingConversation = await this.messagesRepository.findDirectConversation(participantIds);
     const conversation = existingConversation || await this.messagesRepository.createDirectConversation(participantIds);
 
-    return conversation.id;
+    return { conversationId: conversation.id, participantIds };
   }
 
   async getConversationForWorkOrder(workOrderId: string, userId: string) {
-    const conversationId = await this.getConversationIdForWorkOrder(workOrderId, userId);
+    const { conversationId } = await this.getConversationIdForWorkOrder(workOrderId, userId);
     await this.messagesRepository.markIncomingMessagesAsRead(conversationId, userId);
     return this.messagesRepository.getConversation(conversationId);
   }
 
   async sendMessage(workOrderId: string, userId: string, content: string) {
-    const conversationId = await this.getConversationIdForWorkOrder(workOrderId, userId);
-    return this.messagesRepository.createMessage(conversationId, userId, content.trim());
+    const { conversationId, participantIds } = await this.getConversationIdForWorkOrder(workOrderId, userId);
+    const message = await this.messagesRepository.createMessage(conversationId, userId, content.trim());
+    const recipientId = participantIds.find((id) => id !== userId);
+    if (recipientId) await this.notifications.create(recipientId, 'NEW_MESSAGE', 'Nuevo mensaje', `${message.sender.fullName} te escribió sobre un trabajo.`, { workOrderId, messageId: message.id });
+    return message;
   }
 
   async updateMessage(messageId: string, userId: string, content: string) {

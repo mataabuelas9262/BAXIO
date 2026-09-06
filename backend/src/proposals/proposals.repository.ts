@@ -46,7 +46,7 @@ export class ProposalsRepository {
       if (!request || request.status !== 'OPEN' || request.userId === workerId) {
         throw new ConflictException('La solicitud ya no permite esta propuesta.');
       }
-      return tx.proposal.create({
+      const proposal = await tx.proposal.create({
       data: {
         workerId,
         jobRequestId: dto.jobRequestId,
@@ -66,6 +66,8 @@ export class ProposalsRepository {
         },
       },
       });
+      await tx.notification.create({ data: { userId: request.userId, type: 'NEW_PROPOSAL', title: 'Nueva propuesta recibida', message: 'Un profesional envió una propuesta para tu solicitud.', data: { jobRequestId: request.id, proposalId: proposal.id } } });
+      return proposal;
     });
   }
 

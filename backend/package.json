@@ -19,7 +19,7 @@
     "e2e:reset": "ts-node scripts/e2e-reset.ts",
     "e2e:server": "ts-node scripts/e2e-server.ts",
     "migrate:images": "ts-node scripts/migrate-images.ts",
-    "test": "node -r ts-node/register --test tests/production.test.ts tests/jwt-config.test.ts tests/admin.test.ts",
+    "test": "node -r ts-node/register --test tests/production.test.ts tests/jwt-config.test.ts tests/admin.test.ts tests/notifications.test.ts",
     "test:concurrency": "node -r ts-node/register --test tests/concurrency.test.ts",
     "migrate:auth-security": "ts-node scripts/migrate-auth-security.ts",
     "backup": "node scripts/backup.cjs",
