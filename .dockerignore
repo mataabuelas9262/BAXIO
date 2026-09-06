@@ -1,0 +1,13 @@
+.git
+.github
+**/node_modules
+**/.next
+**/.next-*
+backend/.env
+frontend/.env.local
+backend/uploads
+backend/uploads-e2e
+backend/backups
+**/test-results
+**/playwright-report
+**/*.sql

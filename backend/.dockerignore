@@ -1,0 +1,12 @@
+.env
+.mail-preview
+.mail-preview-e2e
+.sms-preview
+.sms-preview-e2e
+uploads
+uploads-e2e
+backups
+node_modules
+dist
+test-results
+*.sql

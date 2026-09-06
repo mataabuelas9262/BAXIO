@@ -51,3 +51,4 @@ test-results/
 /backend/.sms-preview-e2e/
 /backend/backups/
 /backups/
+/deployment/production.env
