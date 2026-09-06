@@ -27,6 +27,22 @@ export class MessagesService {
     return { conversationId: conversation.id, participantIds };
   }
 
+  private async getDirectConversationId(counterpartId: string, userId: string) {
+    if (counterpartId === userId) {
+      throw new BadRequestException('No puedes enviarte mensajes a ti mismo');
+    }
+    const counterpart = await this.messagesRepository.findUserById(counterpartId);
+    if (!counterpart) throw new NotFoundException('El profesional ya no está disponible');
+
+    const participantIds: [string, string] = [userId, counterpartId];
+    if (await this.messagesRepository.findBlockBetween(participantIds)) {
+      throw new ForbiddenException('La conversación no está disponible porque uno de los usuarios bloqueó el contacto');
+    }
+    const existingConversation = await this.messagesRepository.findDirectConversation(participantIds);
+    const conversation = existingConversation || await this.messagesRepository.createDirectConversation(participantIds);
+    return { conversationId: conversation.id, participantIds, counterpart };
+  }
+
   async getConversationForWorkOrder(workOrderId: string, userId: string) {
     const { conversationId } = await this.getConversationIdForWorkOrder(workOrderId, userId);
     await this.messagesRepository.markIncomingMessagesAsRead(conversationId, userId);
@@ -38,6 +54,21 @@ export class MessagesService {
     const message = await this.messagesRepository.createMessage(conversationId, userId, content.trim());
     const recipientId = participantIds.find((id) => id !== userId);
     if (recipientId) await this.notifications.create(recipientId, 'NEW_MESSAGE', 'Nuevo mensaje', `${message.sender.fullName} te escribió sobre un trabajo.`, { workOrderId, messageId: message.id });
+    return message;
+  }
+
+  async getDirectConversation(counterpartId: string, userId: string) {
+    const { conversationId } = await this.getDirectConversationId(counterpartId, userId);
+    await this.messagesRepository.markIncomingMessagesAsRead(conversationId, userId);
+    return this.messagesRepository.getConversation(conversationId);
+  }
+
+  async sendDirectMessage(counterpartId: string, userId: string, content: string) {
+    const normalizedContent = content.trim();
+    if (!normalizedContent) throw new BadRequestException('El mensaje no puede estar vacío');
+    const { conversationId, counterpart } = await this.getDirectConversationId(counterpartId, userId);
+    const message = await this.messagesRepository.createMessage(conversationId, userId, normalizedContent);
+    await this.notifications.create(counterpartId, 'NEW_MESSAGE', 'Nueva solicitud directa', `${message.sender.fullName} quiere contratarte y te escribió.`, { directUserId: userId, messageId: message.id });
     return message;
   }
 

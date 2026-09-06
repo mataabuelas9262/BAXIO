@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { FilePlus2, Info, ShieldCheck } from 'lucide-react';
+import { Info, MessageCircle, ShieldCheck } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -54,8 +54,8 @@ export function DirectContactModal({
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-700 flex items-start gap-3">
           <Info className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            {contextTitle ? `Publica lo que necesitas para recibir una propuesta de ${user.fullName} y de otros profesionales verificados.` : 'Publica lo que necesitas para recibir propuestas de profesionales verificados.'}
-            {' '}Los datos de contacto se habilitan cuando se formaliza una orden de trabajo.
+            {contextTitle ? `Escríbele directamente a ${user.fullName} para explicarle lo que necesitas.` : 'Escríbele directamente para explicar lo que necesitas.'}
+            {' '}La conversación queda dentro de BAXIO y pueden formalizar una orden de trabajo cuando acuerden los detalles.
           </p>
         </div>
 
@@ -63,9 +63,9 @@ export function DirectContactModal({
           <Button variant="outline" size="sm" onClick={onClose}>
             Cerrar
           </Button>
-          <Link href={ROUTES.NEW_JOB_REQUEST}>
-            <Button variant="primary" size="sm" leftIcon={<FilePlus2 className="w-4 h-4" />}>
-              Publicar solicitud
+          <Link href={ROUTES.DIRECT_MESSAGES(user.id)} onClick={onClose}>
+            <Button variant="primary" size="sm" leftIcon={<MessageCircle className="w-4 h-4" />}>
+              Enviar mensaje
             </Button>
           </Link>
         </div>

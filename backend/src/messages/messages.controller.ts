@@ -26,6 +26,16 @@ export class MessagesController {
     return this.messagesService.sendMessage(workOrderId, userId, dto.content);
   }
 
+  @Get('direct/:userId')
+  getDirectConversation(@Param('userId') counterpartId: string, @CurrentUser('id') userId: string) {
+    return this.messagesService.getDirectConversation(counterpartId, userId);
+  }
+
+  @Post('direct/:userId')
+  sendDirectMessage(@Param('userId') counterpartId: string, @CurrentUser('id') userId: string, @Body() dto: SendMessageDto) {
+    return this.messagesService.sendDirectMessage(counterpartId, userId, dto.content);
+  }
+
   @Patch(':messageId')
   updateMessage(@Param('messageId') messageId: string, @CurrentUser('id') userId: string, @Body() dto: UpdateMessageDto) {
     return this.messagesService.updateMessage(messageId, userId, dto.content);

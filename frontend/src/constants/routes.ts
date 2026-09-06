@@ -8,6 +8,7 @@ export const ROUTES = {
   NEW_JOB_REQUEST: '/job-requests/new',
   JOB_REQUEST_DETAIL: (id: string) => `/job-requests/${id}`,
   MY_ORDERS: '/my-orders',
+  DIRECT_MESSAGES: (userId: string) => `/messages/${userId}`,
   WORKER_PROFILE: (id: string) => `/workers/${id}`,
   PROFILE: '/profile',
   LOGIN: '/auth/login',

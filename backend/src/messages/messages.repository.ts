@@ -19,6 +19,13 @@ export class MessagesRepository {
     });
   }
 
+  async findUserById(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, fullName: true },
+    });
+  }
+
   async findDirectConversation(userIds: [string, string]) {
     return this.prisma.conversation.findFirst({
       where: {

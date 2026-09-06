@@ -190,7 +190,7 @@ export const workOrdersApi = {
   },
 };
 
-// MENSAJERÍA PROTEGIDA: disponible únicamente desde una orden de trabajo compartida.
+// MENSAJERÍA PROTEGIDA: disponible desde una orden o una solicitud directa.
 export const messagesApi = {
   getByWorkOrder: async (workOrderId: string): Promise<Conversation> => {
     return apiClient.get(`/messages/work-orders/${workOrderId}`);
@@ -198,6 +198,8 @@ export const messagesApi = {
   send: async (workOrderId: string, content: string): Promise<ChatMessage> => {
     return apiClient.post(`/messages/work-orders/${workOrderId}`, { content });
   },
+  getDirect: async (userId: string): Promise<Conversation> => apiClient.get(`/messages/direct/${userId}`),
+  sendDirect: async (userId: string, content: string): Promise<ChatMessage> => apiClient.post(`/messages/direct/${userId}`, { content }),
   update: async (messageId: string, content: string): Promise<ChatMessage> => apiClient.patch(`/messages/${messageId}`, { content }),
   delete: async (messageId: string): Promise<{ message: string }> => apiClient.delete(`/messages/${messageId}`),
   report: async (data: { messageId?: string; reportedUserId?: string; reason: string; details?: string }) => apiClient.post('/messages/reports', data),

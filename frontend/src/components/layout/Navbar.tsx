@@ -64,8 +64,9 @@ export const Navbar: React.FC = () => {
   const openNotification = async (item: AppNotification) => {
     if (!item.isRead) { await notificationsApi.markRead(item.id).catch(() => undefined); setNotifications(current => current.map(entry => entry.id === item.id ? { ...entry, isRead: true } : entry)); setUnreadCount(current => Math.max(0, current - 1)); }
     setShowNotifications(false);
+    const directUserId = item.data?.directUserId;
     const workOrderId = item.data?.workOrderId;
-    router.push(workOrderId ? `${ROUTES.MY_ORDERS}?workOrder=${encodeURIComponent(workOrderId)}` : ROUTES.MY_ORDERS);
+    router.push(directUserId ? ROUTES.DIRECT_MESSAGES(directUserId) : workOrderId ? `${ROUTES.MY_ORDERS}?workOrder=${encodeURIComponent(workOrderId)}` : ROUTES.MY_ORDERS);
   };
 
   const toggleTheme = () => {

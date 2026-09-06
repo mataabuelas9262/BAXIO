@@ -13,11 +13,12 @@ import { ReportModal, ReportTarget } from './ReportModal';
 interface OrderChatModalProps {
   isOpen: boolean;
   onClose: () => void;
-  order: WorkOrder | null;
+  order?: WorkOrder | null;
+  directUser?: { id: string; fullName: string; avatarUrl?: string | null; location?: string | null } | null;
   currentUserId?: string;
 }
 
-export function OrderChatModal({ isOpen, onClose, order, currentUserId }: OrderChatModalProps) {
+export function OrderChatModal({ isOpen, onClose, order = null, directUser = null, currentUserId }: OrderChatModalProps) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [draft, setDraft] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -30,25 +31,26 @@ export function OrderChatModal({ isOpen, onClose, order, currentUserId }: OrderC
   const [reportNotice, setReportNotice] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const counterpart = order && currentUserId === order.clientId ? order.worker : order?.client;
+  const counterpart = directUser || (order && currentUserId === order.clientId ? order.worker : order?.client);
+  const conversationKey = order?.id || directUser?.id;
 
   useEffect(() => {
     setReportTarget(null);
     setReportNotice('');
-  }, [order?.id, isOpen]);
+  }, [conversationKey, isOpen]);
 
   const loadConversation = useCallback(async () => {
-    if (!order) return;
+    if (!order && !directUser) return;
     setIsLoading(true);
     setError('');
     try {
-      setConversation(await messagesApi.getByWorkOrder(order.id));
+      setConversation(order ? await messagesApi.getByWorkOrder(order.id) : await messagesApi.getDirect(directUser!.id));
     } catch (err: any) {
       setError(err.message || 'No fue posible cargar la conversación');
     } finally {
       setIsLoading(false);
     }
-  }, [order]);
+  }, [order, directUser]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -64,12 +66,12 @@ export function OrderChatModal({ isOpen, onClose, order, currentUserId }: OrderC
   const handleSend = async (event: React.FormEvent) => {
     event.preventDefault();
     const content = draft.trim();
-    if (!order || !content) return;
+    if ((!order && !directUser) || !content) return;
 
     setIsSending(true);
     setError('');
     try {
-      const message = await messagesApi.send(order.id, content);
+      const message = order ? await messagesApi.send(order.id, content) : await messagesApi.sendDirect(directUser!.id, content);
       setConversation((current) => current
         ? { ...current, messages: [...current.messages, message] }
         : current);
@@ -115,13 +117,13 @@ export function OrderChatModal({ isOpen, onClose, order, currentUserId }: OrderC
       onClose={onClose}
       maxWidth="md"
       title={`Chat con ${counterpart?.fullName || 'tu contacto'}`}
-      description={order?.jobRequest?.title || 'Conversación protegida por tu orden de trabajo'}
+      description={order?.jobRequest?.title || (directUser ? 'Consulta directa y privada dentro de BAXIO' : 'Conversación protegida por tu orden de trabajo')}
     >
       <div className="space-y-4">
         <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-brand-50/60 p-3">
           <Avatar src={counterpart?.avatarUrl} name={counterpart?.fullName || 'Contacto'} size="sm" />
           <p className="text-xs leading-relaxed text-brand-900">
-            Este chat es privado entre las dos personas de esta orden de trabajo.
+            {directUser ? 'Este chat es privado entre las dos personas. Formalicen una orden cuando acuerden los detalles.' : 'Este chat es privado entre las dos personas de esta orden de trabajo.'}
           </p>
           <div className="ml-auto flex shrink-0 gap-1">
             <button type="button" disabled={!counterpart?.id} onClick={() => { if (counterpart) { setReportNotice(''); setReportTarget({ type: 'user', id: counterpart.id, name: counterpart.fullName }); } }} className="rounded-lg p-1.5 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-950/40" aria-label="Reportar usuario"><Flag className="h-4 w-4" /></button>
