@@ -34,9 +34,12 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
   const [counterpartTyping, setCounterpartTyping] = useState(false);
   const [attachment, setAttachment] = useState<{ url: string; filename: string } | null>(null);
   const [openMessageMenu, setOpenMessageMenu] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
 
   const counterpart = directUser || (order && currentUserId === order.clientId ? order.worker : order?.client);
   const conversationKey = order?.id || directUser?.id;
@@ -95,6 +98,14 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
     return () => { socket.disconnect(); socketRef.current = null; };
   }, [isOpen, counterpart?.id, directUser?.id, order?.id, appendMessage]);
 
+  useEffect(() => {
+    if (!cameraOpen) return;
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+      .then((stream) => { cameraStreamRef.current = stream; if (cameraVideoRef.current) cameraVideoRef.current.srcObject = stream; })
+      .catch(() => setError('No fue posible abrir la cámara. Revisa el permiso del navegador.'));
+    return () => { cameraStreamRef.current?.getTracks().forEach((track) => track.stop()); cameraStreamRef.current = null; };
+  }, [cameraOpen]);
+
   const sendMessage = async () => {
     const content = draft.trim() || (attachment ? `📎 ${attachment.filename}\n${attachment.url}` : '');
     if ((!order && !directUser) || !content) return;
@@ -122,6 +133,14 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
       setAttachment({ url: result.url, filename: file.name });
     } catch (err: any) { setError(err.message || 'No fue posible adjuntar el archivo'); }
     finally { setIsSending(false); }
+  };
+
+  const capturePhoto = () => {
+    const video = cameraVideoRef.current;
+    if (!video?.videoWidth) return;
+    const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => { if (blob) { void attachFile(new File([blob], `foto-${Date.now()}.jpg`, { type: 'image/jpeg' }), true); setCameraOpen(false); } }, 'image/jpeg', 0.9);
   };
 
   const handleSend = (event: React.FormEvent) => { event.preventDefault(); void sendMessage(); };
@@ -218,7 +237,7 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
         </div>
 
         <form noValidate onSubmit={handleSend} className="rounded-2xl border border-brand-400/30 bg-slate-900/80 p-2 shadow-lg shadow-brand-950/30"><div className="flex items-end gap-2">
-          <div className="flex shrink-0 gap-1 pb-1 text-brand-200"><label title="Adjuntar PDF" className="cursor-pointer rounded-lg p-2 hover:bg-brand-500/20"><Paperclip className="h-4 w-4"/><input hidden type="file" accept="application/pdf,.pdf" onChange={(e) => void attachFile(e.target.files?.[0])}/></label><label title="Elegir foto" className="cursor-pointer rounded-lg p-2 hover:bg-brand-500/20"><Image className="h-4 w-4"/><input hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => void attachFile(e.target.files?.[0], true)}/></label><label title="Tomar foto" className="cursor-pointer rounded-lg p-2 hover:bg-brand-500/20"><Camera className="h-4 w-4"/><input hidden type="file" accept="image/*" capture="environment" onChange={(e) => void attachFile(e.target.files?.[0], true)}/></label></div>
+          <div className="flex shrink-0 gap-1 pb-1 text-brand-200"><label title="Adjuntar PDF" className="cursor-pointer rounded-lg p-2 hover:bg-brand-500/20"><Paperclip className="h-4 w-4"/><input hidden type="file" accept="application/pdf,.pdf" onChange={(e) => void attachFile(e.target.files?.[0])}/></label><label title="Elegir foto" className="cursor-pointer rounded-lg p-2 hover:bg-brand-500/20"><Image className="h-4 w-4"/><input hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => void attachFile(e.target.files?.[0], true)}/></label><button type="button" title="Tomar foto" onClick={() => setCameraOpen(true)} className="rounded-lg p-2 hover:bg-brand-500/20"><Camera className="h-4 w-4"/></button></div>
           <textarea
             value={draft}
             onChange={(event) => handleDraftChange(event.target.value)}
@@ -244,6 +263,9 @@ export function OrderChatModal({ isOpen, onClose, order = null, directUser = nul
         confirmLabel={confirmAction?.type === 'delete' ? 'Eliminar' : confirmAction?.type === 'block' ? 'Bloquear usuario' : 'Enviar reporte'}
         variant={confirmAction?.type === 'delete' || confirmAction?.type === 'block' ? 'danger' : 'warning'}
       />
+    </Modal>
+    <Modal isOpen={cameraOpen} onClose={() => setCameraOpen(false)} title="Tomar foto" description="Autoriza la cámara en tu navegador y captura la imagen.">
+      <div className="space-y-3"><video ref={cameraVideoRef} autoPlay playsInline className="aspect-video w-full rounded-xl bg-slate-950 object-cover" /><div className="flex justify-end gap-2"><Button variant="outline" size="sm" onClick={() => setCameraOpen(false)}>Cancelar</Button><Button variant="primary" size="sm" onClick={capturePhoto} leftIcon={<Camera className="h-4 w-4" />}>Capturar</Button></div></div>
     </Modal>
     {isOpen && reportTarget && <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSent={() => { setReportTarget(null); setReportNotice('Reporte enviado. Quedó registrado para revisión.'); }} />}
     </>
