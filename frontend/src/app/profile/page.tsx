@@ -775,7 +775,7 @@ export default function ProfilePage() {
             helperText="Se utiliza para validación oficial y se muestra protegido en tu perfil."
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:[&>div>label]:min-h-9">
             <Input
               label="Fecha de Emisión (Opcional)"
               type="date"
