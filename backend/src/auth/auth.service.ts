@@ -31,7 +31,7 @@ export class AuthService {
     }
 
     this.mail.ensureReady();
-    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const passwordHash = await bcrypt.hash(dto.password, 12);
 
     const user = await this.prisma.user.create({
       data: {
