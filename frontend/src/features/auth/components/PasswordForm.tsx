@@ -10,6 +10,23 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
+function getPasswordStrength(value: string) {
+  if (!value) return null;
+
+  const score = [
+    value.length >= 8,
+    /[a-z]/.test(value) && /[A-Z]/.test(value),
+    /\d/.test(value),
+    /[^A-Za-z0-9]/.test(value),
+    value.length >= 12,
+  ].filter(Boolean).length;
+
+  if (score <= 1) return { label: 'Débil', bars: 1, color: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-300' };
+  if (score === 2) return { label: 'Aceptable', bars: 2, color: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-300' };
+  if (score === 3) return { label: 'Fuerte', bars: 3, color: 'bg-sky-500', text: 'text-sky-600 dark:text-sky-300' };
+  return { label: 'Muy fuerte', bars: 4, color: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-300' };
+}
+
 export function PasswordForm({ recovery = false }: { recovery?: boolean }) {
   const { user, isLoading, refreshUser } = useAuth();
   const [step, setStep] = useState(recovery ? 'request' : 'password');
@@ -20,6 +37,7 @@ export function PasswordForm({ recovery = false }: { recovery?: boolean }) {
   const [twoFactor, setTwoFactor] = useState(false), [factor, setFactor] = useState('');
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const [until, setUntil] = useState(0), [seconds, setSeconds] = useState(0);
+  const passwordStrength = getPasswordStrength(password);
   const lock = useRef(false);
   useEffect(() => { if (recovery) authApi.passwordOptions().then(r => setSms(r.smsAvailable)).catch(() => setSms(false)); }, [recovery]);
   useEffect(() => { const tick = () => setSeconds(Math.max(0, Math.ceil((until - Date.now()) / 1000))); tick(); const timer = setInterval(tick, 1000); return () => clearInterval(timer); }, [until]);
@@ -59,7 +77,7 @@ export function PasswordForm({ recovery = false }: { recovery?: boolean }) {
         <fieldset disabled={busy} className="space-y-5">
           {step === 'request' && <><Input label="Correo electrónico" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required maxLength={191} /><fieldset className="space-y-2 text-sm text-slate-700 dark:text-slate-200"><legend className="mb-2 font-semibold">Recibir código por</legend><label className="flex gap-2"><input type="radio" name="channel" checked={channel === 'email'} onChange={() => setChannel('email')} />Correo electrónico</label><label className={`flex gap-2 ${!sms ? 'opacity-50' : ''}`}><input type="radio" name="channel" disabled={!sms} checked={channel === 'sms'} onChange={() => setChannel('sms')} />SMS {sms ? '(teléfono verificado)' : '(aún no disponible)'}</label></fieldset></>}
           {step === 'code' && <OtpInput value={code} onChange={setCode} disabled={busy} />}
-          {step === 'password' && <>{!recovery && <Input label="Contraseña actual" type="password" autoComplete="current-password" value={current} onChange={e => setCurrent(e.target.value)} required />}<Input label="Nueva contraseña" type="password" autoComplete="new-password" minLength={8} maxLength={72} value={password} onChange={e => setPassword(e.target.value)} required /><Input label="Confirmar nueva contraseña" type="password" autoComplete="new-password" minLength={8} maxLength={72} value={confirm} onChange={e => setConfirm(e.target.value)} required />{twoFactor && <><p className="text-sm text-slate-500">Tu cuenta tiene 2FA. Confirma también un código de tu app autenticadora o uno de tus códigos de recuperación.</p><Input label="Código de 2FA o de recuperación" autoComplete="off" value={factor} onChange={e => setFactor(e.target.value)} maxLength={40} required /></>}</>}
+          {step === 'password' && <>{!recovery && <Input label="Contraseña actual" type="password" autoComplete="current-password" value={current} onChange={e => setCurrent(e.target.value)} required />}<div className="space-y-2"><Input label="Nueva contraseña" type="password" autoComplete="new-password" minLength={8} maxLength={72} value={password} onChange={e => setPassword(e.target.value)} required />{passwordStrength && <div aria-live="polite" className="space-y-1.5"><div className="flex items-center justify-between text-xs"><span className="text-slate-500 dark:text-slate-400">Seguridad de la contraseña</span><span className={`font-semibold ${passwordStrength.text}`}>{passwordStrength.label}</span></div><div className="grid grid-cols-4 gap-1" aria-label={`Seguridad: ${passwordStrength.label}`}><span className={`h-1.5 rounded-full ${passwordStrength.bars >= 1 ? passwordStrength.color : 'bg-slate-200 dark:bg-slate-700'}`} /><span className={`h-1.5 rounded-full ${passwordStrength.bars >= 2 ? passwordStrength.color : 'bg-slate-200 dark:bg-slate-700'}`} /><span className={`h-1.5 rounded-full ${passwordStrength.bars >= 3 ? passwordStrength.color : 'bg-slate-200 dark:bg-slate-700'}`} /><span className={`h-1.5 rounded-full ${passwordStrength.bars >= 4 ? passwordStrength.color : 'bg-slate-200 dark:bg-slate-700'}`} /></div><p className="text-[11px] text-slate-500 dark:text-slate-400">Usa 8 o más caracteres y combina mayúsculas, números y símbolos.</p></div>}</div><Input label="Confirmar nueva contraseña" type="password" autoComplete="new-password" minLength={8} maxLength={72} value={confirm} onChange={e => setConfirm(e.target.value)} required />{twoFactor && <><p className="text-sm text-slate-500">Tu cuenta tiene 2FA. Confirma también un código de tu app autenticadora o uno de tus códigos de recuperación.</p><Input label="Código de 2FA o de recuperación" autoComplete="off" value={factor} onChange={e => setFactor(e.target.value)} maxLength={40} required /></>}</>}
           <Button type="submit" className="w-full" isLoading={busy} disabled={busy || (step === 'code' && code.length !== 6)}>{step === 'request' ? 'Enviar código' : step === 'code' ? 'Verificar código' : 'Guardar contraseña'}</Button>
         </fieldset>
       </form>
