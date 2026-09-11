@@ -110,7 +110,6 @@ export default function RegisterPage() {
               leftIcon={<Lock className="w-4 h-4" />}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
               required
             />
 

@@ -14,14 +14,14 @@ export const metadata: Metadata = {
     'Plataforma moderna para contratar expertos verificados y encontrar oportunidades de trabajo en tu ciudad.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   // Leer el nonce de la petición obliga el renderizado dinámico necesario para
   // que Next.js lo propague a sus scripts y estilos internos.
-  void headers().get('x-nonce');
+  void (await headers()).get('x-nonce');
 
   return (
     <html lang="es" className="h-full bg-slate-50">

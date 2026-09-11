@@ -26,7 +26,7 @@ test.describe('autenticación y accesos protegidos', () => {
     await page.getByLabel(/contraseña/i).fill('12345');
     await page.getByRole('button', { name: /crear mi cuenta gratis/i }).click();
 
-    await expect(page.getByText(/contraseña debe tener al menos 6 caracteres/i)).toBeVisible();
+    await expect(page.getByText(/contraseña debe tener al menos 8 caracteres/i)).toBeVisible();
   });
 
   test('protege los trabajos contratados para visitantes', async ({ page }) => {

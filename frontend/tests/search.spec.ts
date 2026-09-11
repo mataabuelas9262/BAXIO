@@ -17,7 +17,7 @@ for (const mode of ['hire', 'work'] as const) {
     await expect(page).toHaveURL(url => url.pathname === destination && url.searchParams.get('query') === 'instalación & climas');
     const field = page.getByPlaceholder(mode === 'hire'
       ? 'Buscar por título, oficio, ubicación o descripción...'
-      : 'Buscar solicitudes por oficio, problema o ubicación...');
+      : 'Buscar solicitudes por oficio, problema o ubicación...').first();
     await expect(field).toHaveValue('instalación & climas');
     const navbar = page.getByRole('searchbox', { name: mode === 'hire' ? 'Buscar servicios' : 'Buscar chamba', exact: true });
     const request = page.waitForRequest(req => {

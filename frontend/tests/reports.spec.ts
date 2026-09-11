@@ -50,7 +50,10 @@ test('reporta usuarios y mensajes con motivo, detalles y reintento sin perder el
   expect(saved).toMatchObject({ reporterId: worker.user.id, reportedUserId: client.user.id, reason: 'Otro', details: 'Detalles de la prueba de reporte', status: 'PENDING' });
   await expect(page.getByRole('status').filter({ hasText: 'Reporte enviado' })).toBeVisible();
 
-  await page.getByText(content, { exact: true }).locator('..').getByRole('button', { name: 'Reportar mensaje', exact: true }).click();
+  const messageBubble = page.getByText(content, { exact: true }).locator('..');
+  await messageBubble.hover();
+  await messageBubble.getByRole('button', { name: 'Más opciones', exact: true }).click();
+  await messageBubble.getByRole('button', { name: 'Reportar mensaje', exact: true }).click();
   modal = page.getByRole('dialog', { name: 'Reportar mensaje', exact: true });
   await expect(modal.getByText(content, { exact: true })).toBeVisible();
   await expect(modal.getByRole('radio', { name: 'Otro', exact: true })).not.toBeChecked();
