@@ -4,6 +4,7 @@ import { ServicesRepository } from './services.repository';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { FilterServicesDto } from './dto/filter-services.dto';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class ServicesService {
@@ -58,11 +59,12 @@ export class ServicesService {
     });
   }
 
-  async deleteService(id: string, userId: string) {
+  async deleteService(id: string, userId: string, role: Role) {
     const service = await this.servicesRepo.findById(id);
     if (!service) throw new NotFoundException('Servicio no encontrado');
-    if (service.userId !== userId) throw new ForbiddenException('Solo puedes eliminar tus propios servicios');
+    const canModerate = role === Role.ADMIN || role === Role.MODERATOR;
+    if (service.userId !== userId && !canModerate) throw new ForbiddenException('Solo puedes eliminar tus propios servicios');
     await this.servicesRepo.delete(id);
-    return { message: 'Servicio eliminado' };
+    return { message: canModerate && service.userId !== userId ? 'Servicio retirado por moderación' : 'Servicio eliminado' };
   }
 }

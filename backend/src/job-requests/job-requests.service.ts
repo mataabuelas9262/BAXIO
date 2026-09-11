@@ -4,6 +4,7 @@ import { JobRequestsRepository } from './job-requests.repository';
 import { CreateJobRequestDto } from './dto/create-job-request.dto';
 import { FilterJobRequestsDto } from './dto/filter-job-requests.dto';
 import { UpdateJobRequestDto } from './dto/update-job-request.dto';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class JobRequestsService {
@@ -106,14 +107,15 @@ export class JobRequestsService {
     return this.jobRequestsRepo.update(id, normalizedDto);
   }
 
-  async deleteJobRequest(id: string, userId: string) {
+  async deleteJobRequest(id: string, userId: string, role: Role) {
     const jobRequest = await this.jobRequestsRepo.findById(id);
     if (!jobRequest) throw new NotFoundException('Solicitud de trabajo no encontrada');
-    if (jobRequest.userId !== userId) throw new ForbiddenException('Solo puedes eliminar tus propias solicitudes');
+    const canModerate = role === Role.ADMIN || role === Role.MODERATOR;
+    if (jobRequest.userId !== userId && !canModerate) throw new ForbiddenException('Solo puedes eliminar tus propias solicitudes');
     if (jobRequest.status !== 'OPEN' || jobRequest.workOrder || jobRequest.proposals.some((proposal) => proposal.status === 'ACCEPTED')) {
       throw new BadRequestException('No puedes eliminar una solicitud que ya tiene una contratación o propuesta aceptada');
     }
     await this.jobRequestsRepo.delete(id);
-    return { message: 'Solicitud eliminada' };
+    return { message: canModerate && jobRequest.userId !== userId ? 'Solicitud retirada por moderación' : 'Solicitud eliminada' };
   }
 }

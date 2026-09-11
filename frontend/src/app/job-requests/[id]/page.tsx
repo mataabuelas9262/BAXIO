@@ -121,8 +121,9 @@ export default function JobRequestDetailPage() {
   }
 
   const isOwner = user?.id === jobRequest.userId;
-  const canDelete = isOwner && jobRequest.status === 'OPEN' && !jobRequest.proposals?.some((proposal) => proposal.status === 'ACCEPTED');
-  const canEdit = canDelete && !jobRequest.workOrder;
+  const canModerateRequest = user?.role === 'ADMIN' || user?.role === 'MODERATOR';
+  const canDelete = (isOwner || canModerateRequest) && jobRequest.status === 'OPEN' && !jobRequest.proposals?.some((proposal) => proposal.status === 'ACCEPTED');
+  const canEdit = isOwner && canDelete && !jobRequest.workOrder;
   const handleDelete = async () => {
     setIsDeleting(true);
     try { await jobRequestsApi.delete(jobRequest.id); router.push(ROUTES.JOB_REQUESTS); }
@@ -287,7 +288,15 @@ export default function JobRequestDetailPage() {
           {/* Action Box */}
           <Card className="border-slate-200 shadow-hover sticky top-20">
             {jobRequest.status === 'OPEN' ? (
-              !isOwner ? (
+              canModerateRequest && !isOwner ? (
+                <div className="space-y-3">
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2">
+                    <p className="font-bold text-sm">Modo moderación</p>
+                    <p className="text-amber-700">Puedes retirar esta solicitud si incumple las reglas de BAXIO.</p>
+                  </div>
+                  {canDelete && <Button variant="outline" size="sm" className="w-full text-rose-700 border-rose-200 hover:bg-rose-50" leftIcon={<Trash2 className="w-4 h-4" />} onClick={() => setShowDeleteConfirm(true)}>Retirar solicitud</Button>}
+                </div>
+              ) : !isOwner ? (
                 <div className="space-y-4">
                   <div className="pb-3 border-b border-slate-100">
                     <h3 className="text-base font-extrabold text-slate-900">¿Haces este trabajo?</h3>
@@ -397,7 +406,7 @@ export default function JobRequestDetailPage() {
         variant="primary"
         isConfirming={!!proposalToAccept && isAcceptingId === proposalToAccept}
       />
-      <ConfirmModal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} title="¿Eliminar esta solicitud?" description="Solo se puede eliminar mientras no tenga una contratación. Esta acción no se puede deshacer." confirmLabel="Sí, eliminar solicitud" variant="danger" isConfirming={isDeleting} />
+      <ConfirmModal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} title={isOwner ? '¿Eliminar esta solicitud?' : '¿Retirar esta solicitud por moderación?'} description="Solo se puede eliminar mientras no tenga una contratación. Esta acción no se puede deshacer." confirmLabel={isOwner ? 'Sí, eliminar solicitud' : 'Sí, retirar solicitud'} variant="danger" isConfirming={isDeleting} />
     </PageContainer>
   );
 }

@@ -79,6 +79,7 @@ export default function ServiceDetailPage() {
   }
 
   const isOwnService = user?.id === service.user.id;
+  const canModerateService = user?.role === 'ADMIN' || user?.role === 'MODERATOR';
   const contactLabel = service.pricingType === 'FIXED'
     ? 'Contactar al profesional'
     : service.pricingType === 'HOURLY'
@@ -270,26 +271,26 @@ export default function ServiceDetailPage() {
               </div>
             </div>
 
-            {isOwnService ? (
+            {isOwnService || canModerateService ? (
               <div className="flex flex-col gap-3">
-                <p className="flex items-center justify-center gap-2 rounded-xl bg-brand-50 px-3 py-3 text-xs font-medium text-brand-800 dark:bg-brand-950/50 dark:text-brand-200">
+                <p className={`flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs font-medium ${isOwnService ? 'bg-brand-50 text-brand-800 dark:bg-brand-950/50 dark:text-brand-200' : 'bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200'}`}>
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  Este es tu servicio publicado
+                  {isOwnService ? 'Este es tu servicio publicado' : 'Modo moderación: puedes retirar esta publicación'}
                 </p>
-                <Link
+                {isOwnService && <Link
                   href={`/services/new?edit=${service.id}`}
                   className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                 >
                   <Pencil className="h-4 w-4" />
                   Editar servicio
-                </Link>
+                </Link>}
                 <button
                   type="button"
                   className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 dark:border-rose-400/30 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/60 dark:focus-visible:ring-offset-slate-900"
                   onClick={() => setShowDeleteConfirm(true)}
                 >
                   <Trash2 className="h-4 w-4" />
-                  Eliminar servicio
+                  {isOwnService ? 'Eliminar servicio' : 'Retirar servicio'}
                 </button>
               </div>
             ) : (
@@ -350,7 +351,7 @@ export default function ServiceDetailPage() {
       </div>
 
       {/* Solicitud protegida: los datos de contacto se habilitan tras contratar. */}
-      {!isOwnService && isContactModalOpen && (
+      {!isOwnService && !canModerateService && isContactModalOpen && (
         <DirectContactModal
           isOpen={isContactModalOpen}
           onClose={() => setIsContactModalOpen(false)}
@@ -360,7 +361,7 @@ export default function ServiceDetailPage() {
           priceLabel={formatPrice()}
         />
       )}
-      <ConfirmModal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} title="¿Eliminar este servicio?" description="Se retirará del marketplace y esta acción no se puede deshacer." confirmLabel="Sí, eliminar servicio" variant="danger" isConfirming={isDeleting} />
+      <ConfirmModal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} title={isOwnService ? '¿Eliminar este servicio?' : '¿Retirar este servicio por moderación?'} description="Se retirará del marketplace y esta acción no se puede deshacer." confirmLabel={isOwnService ? 'Sí, eliminar servicio' : 'Sí, retirar servicio'} variant="danger" isConfirming={isDeleting} />
     </PageContainer>
   );
 }

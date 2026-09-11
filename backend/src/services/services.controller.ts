@@ -14,6 +14,7 @@ import { UpdateServiceDto } from './dto/update-service.dto';
 import { FilterServicesDto } from './dto/filter-services.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('services')
 export class ServicesController {
@@ -49,7 +50,11 @@ export class ServicesController {
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string, @CurrentUser('id') userId: string) {
-    return this.servicesService.deleteService(id, userId);
+  async delete(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.servicesService.deleteService(id, userId, role);
   }
 }

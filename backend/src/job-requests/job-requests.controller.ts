@@ -14,6 +14,7 @@ import { FilterJobRequestsDto } from './dto/filter-job-requests.dto';
 import { UpdateJobRequestDto } from './dto/update-job-request.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('job-requests')
 export class JobRequestsController {
@@ -57,7 +58,11 @@ export class JobRequestsController {
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string, @CurrentUser('id') userId: string) {
-    return this.jobRequestsService.deleteJobRequest(id, userId);
+  async delete(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.jobRequestsService.deleteJobRequest(id, userId, role);
   }
 }
